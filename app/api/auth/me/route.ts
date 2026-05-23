@@ -3,6 +3,8 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { USERS_COLLECTION } from "@/models/user";
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+
 export async function GET(request: NextRequest) {
   const token = request.cookies.get("resume-auth")?.value;
 

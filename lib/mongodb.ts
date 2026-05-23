@@ -15,6 +15,17 @@ declare global {
 let cachedClientPromise: Promise<MongoClient> | undefined;
 
 function createClientPromise() {
+  console.log(
+    "[MongoDB] MONGODB_URI exists:",
+    !!process.env.MONGODB_URI,
+    "NODE_ENV:",
+    process.env.NODE_ENV,
+    "VERCEL_ENV:",
+    process.env.VERCEL_ENV,
+    "NEXT_RUNTIME:",
+    process.env.NEXT_RUNTIME,
+  );
+
   if (!uri) {
     throw new Error("MONGODB_URI environment variable is required.");
   }

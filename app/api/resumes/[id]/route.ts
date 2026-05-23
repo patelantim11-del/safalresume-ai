@@ -6,6 +6,8 @@ import { ObjectId } from "mongodb";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+export const runtime = "nodejs";
+
 const resumeSchema = z.object({
   title: z.string().min(3),
   template: z.enum(resumeTemplates),

@@ -3,6 +3,8 @@ import { PAYMENTS_COLLECTION } from "@/models/payment";
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
   const signature = request.headers.get("x-razorpay-signature") ?? "";

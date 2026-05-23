@@ -4,6 +4,8 @@ import { USERS_COLLECTION } from "@/models/user";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+export const runtime = "nodejs";
+
 const signupSchema = z.object({
   fullName: z.string().min(2),
   email: z.string().email(),
