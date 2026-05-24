@@ -1,4 +1,4 @@
-import { verifyToken } from "@/lib/auth";
+import { getUserFromRequest } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { USERS_COLLECTION } from "@/models/user";
 import { NextRequest, NextResponse } from "next/server";
@@ -6,15 +6,9 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
-  const token = request.cookies.get("resume-auth")?.value;
+  const authUser = await getUserFromRequest(request);
 
-  if (!token) {
-    return NextResponse.json({ user: null }, { status: 200 });
-  }
-
-  const payload = verifyToken(token);
-
-  if (!payload) {
+  if (!authUser) {
     return NextResponse.json({ user: null }, { status: 200 });
   }
 
@@ -22,7 +16,7 @@ export async function GET(request: NextRequest) {
   const db = client.db();
   const user = await db
     .collection(USERS_COLLECTION)
-    .findOne({ _id: new (await import("mongodb")).ObjectId(payload.id) });
+    .findOne({ _id: new (await import("mongodb")).ObjectId(authUser._id) });
 
   if (!user) {
     return NextResponse.json({ user: null }, { status: 200 });

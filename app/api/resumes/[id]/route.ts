@@ -1,4 +1,4 @@
-import { verifyToken } from "@/lib/auth";
+import { getUserFromRequest } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { RESUMES_COLLECTION } from "@/models/resume";
 import { resumeTemplates } from "@/types";
@@ -99,10 +99,9 @@ function normalizeResume(resume: any) {
 
 export async function GET(request: NextRequest, context: any) {
   const { params } = context as { params: { id: string } };
-  const token = request.cookies.get("resume-auth")?.value;
-  const payload = token ? verifyToken(token) : null;
+  const user = await getUserFromRequest(request);
 
-  if (!payload) {
+  if (!user) {
     return NextResponse.json(
       { error: "Authentication required." },
       { status: 401 },
@@ -117,7 +116,7 @@ export async function GET(request: NextRequest, context: any) {
   const db = client.db();
   const resume = await db.collection(RESUMES_COLLECTION).findOne({
     _id: new ObjectId(params.id),
-    userId: payload.id,
+    userId: user._id,
   });
 
   if (!resume) {
@@ -132,10 +131,9 @@ export async function GET(request: NextRequest, context: any) {
 
 export async function PATCH(request: NextRequest, context: any) {
   const { params } = context as { params: { id: string } };
-  const token = request.cookies.get("resume-auth")?.value;
-  const payload = token ? verifyToken(token) : null;
+  const user = await getUserFromRequest(request);
 
-  if (!payload) {
+  if (!user) {
     return NextResponse.json(
       { error: "Authentication required." },
       { status: 401 },
@@ -157,7 +155,7 @@ export async function PATCH(request: NextRequest, context: any) {
   const db = client.db();
   const existing = await db.collection(RESUMES_COLLECTION).findOne({
     _id: new ObjectId(params.id),
-    userId: payload.id,
+    userId: user._id,
   });
 
   if (!existing) {
@@ -184,7 +182,7 @@ export async function PATCH(request: NextRequest, context: any) {
   await db
     .collection(RESUMES_COLLECTION)
     .updateOne(
-      { _id: new ObjectId(params.id), userId: payload.id },
+      { _id: new ObjectId(params.id), userId: user._id },
       { $set: updatePayload },
     );
 
@@ -201,10 +199,9 @@ export async function PATCH(request: NextRequest, context: any) {
 
 export async function DELETE(request: NextRequest, context: any) {
   const { params } = context as { params: { id: string } };
-  const token = request.cookies.get("resume-auth")?.value;
-  const payload = token ? verifyToken(token) : null;
+  const user = await getUserFromRequest(request);
 
-  if (!payload) {
+  if (!user) {
     return NextResponse.json(
       { error: "Authentication required." },
       { status: 401 },
@@ -219,7 +216,7 @@ export async function DELETE(request: NextRequest, context: any) {
   const db = client.db();
   const result = await db.collection(RESUMES_COLLECTION).deleteOne({
     _id: new ObjectId(params.id),
-    userId: payload.id,
+    userId: user._id,
   });
 
   if (result.deletedCount === 0) {

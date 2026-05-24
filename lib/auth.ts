@@ -1,10 +1,21 @@
 import type { User } from "@/types";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import { NextRequest } from "next/server";
 
 const JWT_SECRET = process.env.JWT_SECRET ?? "resume-builder-secret";
+export const AUTH_COOKIE_NAME = "resume-auth";
+
+export function getTokenFromRequest(request: NextRequest) {
+  const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
+  console.log("[auth] Cookie detection", {
+    cookieName: AUTH_COOKIE_NAME,
+    tokenFound: Boolean(token),
+    tokenSnippet: token ? `${token.slice(0, 10)}...` : null,
+  });
+  return token || null;
+}
 
 export async function hashPassword(password: string) {
   return bcrypt.hash(password, 10);
@@ -21,23 +32,36 @@ export async function verifyPassword(password: string, hash?: string) {
 export function signToken(
   user: Pick<User, "email" | "fullName" | "createdAt"> & { id: string },
 ) {
-  return jwt.sign(
+  const token = jwt.sign(
     { id: user.id, email: user.email, fullName: user.fullName },
     JWT_SECRET,
     {
       expiresIn: "7d",
     },
   );
+  console.log("[auth] Signed JWT", {
+    userId: user.id,
+    email: user.email,
+  });
+  return token;
 }
 
 export function verifyToken(token: string) {
   try {
-    return jwt.verify(token, JWT_SECRET) as {
+    const payload = jwt.verify(token, JWT_SECRET) as {
       id: string;
       email: string;
       fullName: string;
     };
-  } catch {
+    console.log("[auth] JWT verification succeeded", {
+      userId: payload.id,
+      email: payload.email,
+    });
+    return payload;
+  } catch (error) {
+    console.warn("[auth] JWT verification failed", {
+      message: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 }
@@ -46,14 +70,23 @@ export async function getUserFromRequest(
   request: NextRequest,
 ): Promise<User | null> {
   try {
-    const token = request.cookies.get("token")?.value;
-    if (!token) return null;
+    const token = getTokenFromRequest(request);
+    if (!token) {
+      console.warn("[auth] Authorization failed: missing auth token");
+      return null;
+    }
 
     const decoded = verifyToken(token);
-    if (!decoded) return null;
+    if (!decoded) {
+      console.warn("[auth] Authorization failed: invalid JWT");
+      return null;
+    }
 
     const uri = process.env.MONGODB_URI;
-    if (!uri) return null;
+    if (!uri) {
+      console.error("[auth] MONGODB_URI is not set");
+      return null;
+    }
 
     const client = new MongoClient(uri);
     await client.connect();
@@ -61,10 +94,23 @@ export async function getUserFromRequest(
     const db = client.db();
     const usersCollection = db.collection("users");
 
-    const user = await usersCollection.findOne({ email: decoded.email });
+    console.log("[auth] Looking up authenticated user", {
+      userId: decoded.id,
+      email: decoded.email,
+    });
+
+    const user = await usersCollection.findOne({
+      _id: new ObjectId(decoded.id),
+    });
     await client.close();
 
-    if (!user) return null;
+    if (!user) {
+      console.warn("[auth] Authorization failed: user not found", {
+        userId: decoded.id,
+        email: decoded.email,
+      });
+      return null;
+    }
 
     return {
       _id: user._id?.toString(),

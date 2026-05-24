@@ -1,4 +1,4 @@
-import { verifyToken } from "@/lib/auth";
+import { getUserFromRequest } from "@/lib/auth";
 import {
   compareKeywords,
   generateAchievement,
@@ -17,10 +17,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get("resume-auth")?.value;
-    const payload = token ? verifyToken(token) : null;
-
-    if (!payload) {
+    const user = await getUserFromRequest(request);
+    if (!user) {
       return NextResponse.json(
         { error: "Authentication required." },
         { status: 401 },

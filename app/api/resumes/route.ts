@@ -1,4 +1,4 @@
-import { verifyToken } from "@/lib/auth";
+import { getUserFromRequest } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { RESUMES_COLLECTION } from "@/models/resume";
 import { resumeTemplates } from "@/types";
@@ -93,10 +93,8 @@ const resumeSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get("resume-auth")?.value;
-    const payload = token ? verifyToken(token) : null;
-
-    if (!payload) {
+    const user = await getUserFromRequest(request);
+    if (!user) {
       return NextResponse.json(
         { error: "Authentication required." },
         { status: 401 },
@@ -111,7 +109,7 @@ export async function GET(request: NextRequest) {
       50,
     );
 
-    const filter: Record<string, unknown> = { userId: payload.id };
+    const filter: Record<string, unknown> = { userId: user._id };
 
     if (search) {
       filter.title = { $regex: search, $options: "i" };
@@ -163,10 +161,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get("resume-auth")?.value;
-    const payload = token ? verifyToken(token) : null;
-
-    if (!payload) {
+    const user = await getUserFromRequest(request);
+    if (!user) {
       return NextResponse.json(
         { error: "Authentication required." },
         { status: 401 },
@@ -188,7 +184,7 @@ export async function POST(request: NextRequest) {
     const now = new Date().toISOString();
 
     const resumePayload = {
-      userId: payload.id,
+      userId: user._id,
       title: parsed.data.title,
       template: parsed.data.template,
       personalInfo: parsed.data.personalInfo,
@@ -206,7 +202,7 @@ export async function POST(request: NextRequest) {
     if (parsed.data.id) {
       const existingResume = await db.collection(RESUMES_COLLECTION).findOne({
         _id: new ObjectId(parsed.data.id),
-        userId: payload.id,
+        userId: user._id,
       });
 
       if (!existingResume) {
@@ -224,7 +220,7 @@ export async function POST(request: NextRequest) {
       await db
         .collection(RESUMES_COLLECTION)
         .updateOne(
-          { _id: new ObjectId(parsed.data.id), userId: payload.id },
+          { _id: new ObjectId(parsed.data.id), userId: user._id },
           { $set: updatedPayload },
         );
 
@@ -241,6 +237,7 @@ export async function POST(request: NextRequest) {
 
     const result = await db.collection(RESUMES_COLLECTION).insertOne({
       ...resumePayload,
+      userId: user._id,
       createdAt: now,
     });
 
