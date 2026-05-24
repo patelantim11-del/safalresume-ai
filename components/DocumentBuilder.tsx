@@ -1,7 +1,8 @@
 "use client";
 
 import { Document } from "@/types";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import FresherResumeForm from "./FresherResumeForm";
 import InternshipForm from "./InternshipForm";
 import ResumeForm from "./ResumeForm";
 
@@ -14,6 +15,9 @@ type Props = {
 function isResumeType(type: string) {
   return [
     "job_resume",
+    "fresher_resume",
+    "professional_resume",
+    "ats_resume",
     "internship_resume",
     "student_cv",
     "academic_cv",
@@ -51,16 +55,7 @@ export default function DocumentBuilder({
     setVersions((document as any).versions || []);
   }, [document]);
 
-  useEffect(() => {
-    const id = setInterval(() => {
-      if (autoSavePending) {
-        handleSave();
-      }
-    }, 15000);
-    return () => clearInterval(id);
-  }, [autoSavePending]);
-
-  async function handleSave() {
+  const handleSave = useCallback(async () => {
     setSaving(true);
     try {
       const payload = {
@@ -93,7 +88,16 @@ export default function DocumentBuilder({
     } finally {
       setSaving(false);
     }
-  }
+  }, [content, documentId, onUpdated, status, template, title]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (autoSavePending) {
+        handleSave();
+      }
+    }, 15000);
+    return () => clearInterval(id);
+  }, [autoSavePending, handleSave]);
 
   async function handleDuplicate() {
     try {
@@ -151,12 +155,27 @@ export default function DocumentBuilder({
           />
         );
       }
+
+      if (document.type === "fresher_resume") {
+        return (
+          <FresherResumeForm
+            initialData={content}
+            multiStep={true}
+            onSave={async (values) => {
+              setContent(values as any);
+              setAutoSavePending(true);
+              await handleSave();
+              return { id: documentId };
+            }}
+          />
+        );
+      }
+
       return (
         <ResumeForm
           initialData={content}
           multiStep={document.type === "job_resume"}
           onSave={async (values) => {
-            // map resume form values back into document content and save
             setContent(values as any);
             setAutoSavePending(true);
             await handleSave();
@@ -270,7 +289,7 @@ export default function DocumentBuilder({
         {Object.keys(content).map((k) => renderField(k, content[k], [k]))}
       </div>
     );
-  }, [content, document.type]);
+  }, [content, document.type, documentId, handleSave]);
 
   return (
     <div>

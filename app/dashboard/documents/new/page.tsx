@@ -12,6 +12,12 @@ const DOCUMENT_TYPE_TEMPLATES: Record<DocumentType, string[]> = {
   marriage_biodata: ["traditional", "modern", "premium"],
   student_cv: ["modern", "professional", "minimal"],
   internship_resume: ["fresher", "modern", "professional"],
+  fresher_resume: ["fresher", "modern", "professional"],
+  professional_resume: ["professional", "modern", "executive"],
+  ats_resume: ["ats", "corporate", "modern"],
+  cover_letter: ["classic", "modern", "professional"],
+  statement_of_purpose: ["academic", "modern", "professional"],
+  letter_of_recommendation: ["formal", "modern", "academic"],
   freelancer_profile: ["modern", "creative", "professional"],
   business_profile: ["professional", "modern", "premium"],
   academic_cv: ["professional", "academic", "modern"],
@@ -264,6 +270,156 @@ function getDefaultContent(type: DocumentType) {
         hobbies: [],
         phone: "+1 (555) 000-0000",
         email: "your.email@example.com",
+      };
+
+    case "fresher_resume":
+      return {
+        type,
+        personalInfo: {
+          fullName: "Your Name",
+          email: "your.email@example.com",
+          phone: "+1 (555) 000-0000",
+          location: "City, State",
+          jobTitle: "Aspiring Intern",
+          website: "",
+          linkedin: "",
+          github: "",
+          photoUrl: "",
+          summary: "A motivated fresher looking for internship opportunities.",
+        },
+        careerObjective:
+          "Seeking a challenging internship to apply academic knowledge and develop skills.",
+        education: [
+          {
+            id: "edu-0",
+            school: "University Name",
+            degree: "B.Sc.",
+            field: "Computer Science",
+            location: "City",
+            startDate: "2022-08",
+            endDate: "2025-05",
+            grade: "8.5 CGPA",
+          },
+        ],
+        skills: [{ id: "skill-0", name: "Python" }],
+        academicProjects: [
+          {
+            id: "proj-0",
+            name: "Project Title",
+            description: "Project description.",
+            link: "",
+          },
+        ],
+        internships: [],
+        certifications: [],
+        achievements: [],
+        languages: [],
+        contactInfo: {
+          phone: "+1 (555) 000-0000",
+          email: "your.email@example.com",
+          linkedin: "",
+          github: "",
+          location: "City, State",
+        },
+      };
+
+    case "professional_resume":
+    case "job_resume":
+      return {
+        type,
+        personalInfo: {
+          fullName: "Your Name",
+          email: "your.email@example.com",
+          phone: "+1 (555) 000-0000",
+          location: "City, State",
+          jobTitle: "Professional Title",
+          website: "",
+          linkedin: "",
+          github: "",
+          photoUrl: "",
+          summary:
+            "Experienced professional delivering measurable business results.",
+        },
+        experience: [],
+        education: [],
+        skills: [],
+        projects: [],
+        certifications: [],
+        achievements: [],
+        languages: [],
+        socialLinks: [],
+      };
+
+    case "ats_resume":
+      return {
+        type,
+        personalInfo: {
+          fullName: "Your Name",
+          email: "your.email@example.com",
+          phone: "+1 (555) 000-0000",
+          location: "City, State",
+          jobTitle: "ATS-Optimized Resume",
+          website: "",
+          linkedin: "",
+          github: "",
+          photoUrl: "",
+          summary: "An ATS-ready resume built around keywords and clarity.",
+        },
+        experience: [],
+        education: [],
+        skills: [],
+        projects: [],
+        certifications: [],
+        achievements: [],
+        languages: [],
+        socialLinks: [],
+        keywords: [],
+      };
+
+    case "cover_letter":
+      return {
+        type,
+        recipientName: "Hiring Manager",
+        companyName: "Company Name",
+        position: "Position Title",
+        senderName: "Your Name",
+        senderTitle: "Your Current Title",
+        senderEmail: "your.email@example.com",
+        senderPhone: "+1 (555) 000-0000",
+        introduction: "I am writing to express my interest in the role.",
+        body: "I bring strong experience and passion that align with your needs.",
+        closing: "Thank you for your time and consideration.",
+        date: new Date().toISOString().split("T")[0],
+        template: "classic",
+      };
+
+    case "statement_of_purpose":
+      return {
+        type,
+        applicantName: "Your Name",
+        programName: "Program Name",
+        universityName: "University Name",
+        currentBackground: "Your academic background and achievements.",
+        motivation: "Why you want to join the program.",
+        strengths: "Your strengths and qualifications.",
+        longTermGoals: "Your academic and career goals.",
+        whyThisProgram: "Why this program is the best fit for you.",
+        template: "academic",
+      };
+
+    case "letter_of_recommendation":
+      return {
+        type,
+        recommenderName: "Recommender Name",
+        recommenderTitle: "Recommender Title",
+        recommenderInstitution: "Institution Name",
+        relationship: "Relationship with candidate",
+        recommendFor: "What the recommendation is for",
+        strengths: "Candidate strengths and skills.",
+        examples: "Real achievements and examples.",
+        closing: "I strongly recommend them for this opportunity.",
+        date: new Date().toISOString().split("T")[0],
+        template: "formal",
       };
 
     case "portfolio":

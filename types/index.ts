@@ -4,6 +4,12 @@
 
 export const documentTypes = [
   "job_resume",
+  "fresher_resume",
+  "professional_resume",
+  "ats_resume",
+  "cover_letter",
+  "statement_of_purpose",
+  "letter_of_recommendation",
   "marriage_biodata",
   "student_cv",
   "internship_resume",
@@ -163,6 +169,94 @@ export interface StudentCVContent {
   skills: SkillItem[];
 }
 
+export interface FresherResumeContent {
+  type: "fresher_resume";
+  personalInfo: PersonalInfo;
+  careerObjective: string;
+  education: EducationItem[];
+  skills: SkillItem[];
+  academicProjects: ProjectItem[];
+  certifications: ValueItem[];
+  achievements: ValueItem[];
+  languages: ValueItem[];
+  contactInfo: {
+    phone: string;
+    email: string;
+    linkedin?: string;
+    github?: string;
+    location?: string;
+  };
+}
+
+export interface ProfessionalResumeContent {
+  type: "professional_resume";
+  personalInfo: PersonalInfo;
+  experience: ExperienceItem[];
+  education: EducationItem[];
+  skills: SkillItem[];
+  projects: ProjectItem[];
+  certifications: ValueItem[];
+  achievements: ValueItem[];
+  languages: ValueItem[];
+  summary: string;
+}
+
+export interface ATSResumeContent {
+  type: "ats_resume";
+  personalInfo: PersonalInfo;
+  experience: ExperienceItem[];
+  education: EducationItem[];
+  skills: SkillItem[];
+  projects: ProjectItem[];
+  certifications: ValueItem[];
+  achievements: ValueItem[];
+  languages: ValueItem[];
+  keywords: string[];
+}
+
+export interface CoverLetterContent {
+  type: "cover_letter";
+  recipientName: string;
+  companyName: string;
+  position: string;
+  senderName: string;
+  senderTitle: string;
+  senderEmail: string;
+  senderPhone: string;
+  introduction: string;
+  body: string;
+  closing: string;
+  date: string;
+  template: string;
+}
+
+export interface SOPContent {
+  type: "statement_of_purpose";
+  applicantName: string;
+  programName: string;
+  universityName: string;
+  currentBackground: string;
+  motivation: string;
+  strengths: string;
+  longTermGoals: string;
+  whyThisProgram: string;
+  template: string;
+}
+
+export interface LORContent {
+  type: "letter_of_recommendation";
+  recommenderName: string;
+  recommenderTitle: string;
+  recommenderInstitution: string;
+  relationship: string;
+  recommendFor: string;
+  strengths: string;
+  examples: string;
+  closing: string;
+  date: string;
+  template: string;
+}
+
 export interface FreelancerProfileContent {
   type: "freelancer_profile";
   fullName: string;
@@ -218,6 +312,12 @@ export interface CustomProfileContent {
 
 export type DocumentContent =
   | JobResumeContent
+  | FresherResumeContent
+  | ProfessionalResumeContent
+  | ATSResumeContent
+  | CoverLetterContent
+  | SOPContent
+  | LORContent
   | BiodataContent
   | StudentCVContent
   | FreelancerProfileContent
