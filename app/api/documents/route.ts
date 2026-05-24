@@ -74,6 +74,7 @@ export async function POST(request: NextRequest) {
       atsScore: 0,
       viewCount: 0,
       shares: 0,
+      versions: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

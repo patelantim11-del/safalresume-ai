@@ -1,5 +1,6 @@
 "use client";
 
+import DocumentBuilder from "@/components/DocumentBuilder";
 import { Card } from "@/components/ui/Card";
 import { Document, documentStatuses } from "@/types";
 import Link from "next/link";
@@ -12,11 +13,8 @@ export default function DocumentEditorPage() {
   const documentId = params?.id as string | undefined;
 
   const [document, setDocument] = useState<Document | null>(null);
-  const [contentJson, setContentJson] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
 
   useEffect(() => {
     async function loadDocument() {
@@ -32,7 +30,6 @@ export default function DocumentEditorPage() {
 
         const data = await response.json();
         setDocument(data);
-        setContentJson(JSON.stringify(data.content || {}, null, 2));
       } catch (err) {
         console.error("Failed to load document:", err);
         router.push("/dashboard/documents");
@@ -47,17 +44,15 @@ export default function DocumentEditorPage() {
   async function handleSave() {
     if (!documentId || !document) return;
 
-    setError("");
-    setMessage("");
+    setSaving(true);
     setSaving(true);
 
     try {
-      const parsedContent = JSON.parse(contentJson);
       const payload = {
         title: document.title,
         template: document.template,
         status: document.status,
-        content: parsedContent,
+        content: document.content,
       };
 
       const response = await fetch(`/api/documents/${documentId}`, {
@@ -68,15 +63,14 @@ export default function DocumentEditorPage() {
 
       if (!response.ok) {
         const data = await response.json();
-        setError(data.error || "Unable to save document");
+        console.error(data);
         return;
       }
 
-      setMessage("Document saved successfully.");
-      setDocument({ ...document, content: parsedContent });
+      const resp = await response.json();
+      setDocument(resp.document || { ...document, ...payload });
     } catch (err) {
       console.error(err);
-      setError("Invalid JSON content. Please correct the document data.");
     } finally {
       setSaving(false);
     }
@@ -230,31 +224,19 @@ export default function DocumentEditorPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-semibold text-white">
-                  Content JSON
+                  Visual Builder
                 </h2>
                 <p className="text-gray-400 text-sm">
-                  Edit the document payload directly for advanced content
-                  updates.
+                  Use the structured visual editor to update your document.
                 </p>
               </div>
             </div>
 
-            <textarea
-              value={contentJson}
-              onChange={(e) => setContentJson(e.target.value)}
-              className="w-full min-h-[380px] resize-none rounded-2xl border border-white/10 bg-gray-950/80 p-4 font-mono text-sm text-white outline-none focus:border-blue-500/50"
+            <DocumentBuilder
+              document={document as Document}
+              documentId={documentId as string}
+              onUpdated={(doc) => setDocument(doc)}
             />
-
-            {error && (
-              <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-4">
-                <p className="text-sm text-red-200">{error}</p>
-              </div>
-            )}
-            {message && (
-              <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-4">
-                <p className="text-sm text-emerald-200">{message}</p>
-              </div>
-            )}
           </div>
         </Card>
       </div>

@@ -5,7 +5,7 @@ import { resumeTemplates } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Download, FileText, Plus, Sparkles, Trash } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -206,7 +206,19 @@ const defaultValues: ResumeFormValues = {
   socialLinks: [{ id: "social-0", label: "", url: "" }],
 };
 
-export default function ResumeForm() {
+type ResumeFormProps = {
+  resumeId?: string | null;
+  initialData?: Partial<ResumeFormValues> | null;
+  onSave?: (values: ResumeFormValues) => Promise<{ id?: string } | void>;
+  multiStep?: boolean;
+};
+
+export default function ResumeForm({
+  resumeId: propResumeId,
+  initialData = null,
+  onSave,
+  multiStep = false,
+}: ResumeFormProps) {
   const form = useForm<ResumeFormValues>({
     resolver: zodResolver(resumeSchema),
     defaultValues,
@@ -220,6 +232,9 @@ export default function ResumeForm() {
     type: "success" | "error" | "info";
     text: string;
   } | null>(null);
+
+  const [currentStep, setCurrentStep] = useState(0);
+  const autoSaveTimer = useRef<number | null>(null);
 
   const searchParams = useSearchParams();
   const resumeId = searchParams.get("resumeId");
@@ -257,7 +272,18 @@ export default function ResumeForm() {
 
   useEffect(() => {
     async function loadResume() {
-      if (!resumeId || createNew) {
+      if (initialData) {
+        setSavedResumeId(propResumeId ?? null);
+        form.reset({
+          ...defaultValues,
+          ...initialData,
+        } as any);
+        setIsLoading(false);
+        setStatusMessage({ type: "success", text: "Loaded initial data." });
+        return;
+      }
+
+      if (!propResumeId || createNew) {
         setSavedResumeId(null);
         setIsLoading(false);
         setStatusMessage({
@@ -273,7 +299,7 @@ export default function ResumeForm() {
       setStatusMessage({ type: "info", text: "Loading resume..." });
 
       try {
-        const response = await fetch(`/api/resumes/${resumeId}`);
+        const response = await fetch(`/api/resumes/${propResumeId}`);
         const data = await response.json();
 
         if (!response.ok) {
@@ -326,11 +352,32 @@ export default function ResumeForm() {
     }
 
     loadResume();
-  }, [form, resumeId, createNew]);
+  }, [form, propResumeId, createNew, initialData]);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Autosave when values change (debounced)
+  useEffect(() => {
+    if (!onSave) return;
+    const subscription = form.watch(() => {
+      if (autoSaveTimer.current) window.clearTimeout(autoSaveTimer.current);
+      autoSaveTimer.current = window.setTimeout(async () => {
+        try {
+          const values = form.getValues();
+          await onSave(values as ResumeFormValues);
+          setStatusMessage({ type: "info", text: "Auto-saved" });
+        } catch (err) {
+          setStatusMessage({ type: "error", text: "Auto-save failed" });
+        }
+      }, 3000) as unknown as number;
+    });
+    return () => {
+      subscription.unsubscribe?.();
+      if (autoSaveTimer.current) window.clearTimeout(autoSaveTimer.current);
+    };
+  }, [form, onSave]);
 
   const previewValues = form.watch();
 
@@ -410,37 +457,47 @@ export default function ResumeForm() {
     setStatusMessage(null);
 
     try {
-      const payload = savedResumeId ? { ...values, id: savedResumeId } : values;
-      const response = await fetch("/api/resumes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      if (onSave) {
+        await onSave(values);
+        setStatusMessage({
+          type: "success",
+          text: "Saved via parent handler.",
+        });
+      } else {
+        const payload = savedResumeId
+          ? { ...values, id: savedResumeId }
+          : values;
+        const response = await fetch("/api/resumes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
 
-      let data: any = null;
-      try {
-        data = await response.json();
-      } catch {}
+        let data: any = null;
+        try {
+          data = await response.json();
+        } catch {}
 
-      if (!response.ok) {
-        const errMsg =
-          data?.error ||
-          data?.message ||
-          JSON.stringify(data) ||
-          "Unknown error";
-        setStatusMessage({ type: "error", text: `Save failed: ${errMsg}` });
-        return;
+        if (!response.ok) {
+          const errMsg =
+            data?.error ||
+            data?.message ||
+            JSON.stringify(data) ||
+            "Unknown error";
+          setStatusMessage({ type: "error", text: `Save failed: ${errMsg}` });
+          return;
+        }
+
+        const resumeId = data?.resume?.id;
+        if (resumeId) {
+          setSavedResumeId(resumeId);
+        }
+
+        setStatusMessage({
+          type: "success",
+          text: "Resume saved successfully.",
+        });
       }
-
-      const resumeId = data?.resume?.id;
-      if (resumeId) {
-        setSavedResumeId(resumeId);
-      }
-
-      setStatusMessage({
-        type: "success",
-        text: "Resume saved successfully.",
-      });
     } catch (err: any) {
       setStatusMessage({
         type: "error",
@@ -453,6 +510,90 @@ export default function ResumeForm() {
 
   function downloadPdf() {
     window.print();
+  }
+
+  function StepButtons() {
+    const steps = [
+      "Personal",
+      "Experience",
+      "Education",
+      "Skills & Projects",
+      "Certifications",
+      "Languages & Socials",
+      "Preview",
+    ];
+
+    async function next() {
+      // validate current step fields
+      try {
+        let ok = true;
+        switch (currentStep) {
+          case 0:
+            ok = await form.trigger("personalInfo");
+            break;
+          case 1:
+            ok = await form.trigger("experience");
+            break;
+          case 2:
+            ok = await form.trigger("education");
+            break;
+          case 3:
+            ok = await form.trigger(["skills", "projects"] as any);
+            break;
+          case 4:
+            ok = await form.trigger(["certifications", "achievements"] as any);
+            break;
+          case 5:
+            ok = await form.trigger(["languages", "socialLinks"] as any);
+            break;
+          default:
+            ok = true;
+        }
+        if (!ok) return;
+        setCurrentStep((s) => Math.min(steps.length - 1, s + 1));
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    return (
+      <div className="flex items-center gap-3 justify-between">
+        <div className="flex gap-2">
+          {currentStep > 0 && (
+            <button
+              type="button"
+              onClick={() => setCurrentStep((s) => Math.max(0, s - 1))}
+              className="rounded-3xl px-4 py-2 bg-slate-800 text-sm text-white"
+            >
+              Back
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {currentStep < 6 ? (
+            <button
+              type="button"
+              onClick={next}
+              className="rounded-3xl px-6 py-3 bg-sky-500 text-sm font-semibold"
+            >
+              Next: {steps[currentStep + 1]}
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={isSaving || isLoading}
+              className={`inline-flex items-center justify-center rounded-3xl px-6 py-3 text-sm font-semibold text-slate-950 transition ${
+                isSaving || isLoading
+                  ? "cursor-not-allowed bg-slate-600"
+                  : "bg-sky-500 hover:bg-sky-400"
+              }`}
+            >
+              <FileText size={18} /> {isSaving ? "Saving..." : "Save resume"}
+            </button>
+          )}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -527,184 +668,188 @@ export default function ResumeForm() {
           </div>
         </div>
 
-        <section className="space-y-4 rounded-3xl border border-slate-800 bg-slate-950/90 p-6">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold text-white">
-                Personal information
-              </p>
-              <p className="text-sm text-slate-400">
-                Enter your contact details and professional profile.
-              </p>
+        {(!multiStep || currentStep === 0) && (
+          <section className="space-y-4 rounded-3xl border border-slate-800 bg-slate-950/90 p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-white">
+                  Personal information
+                </p>
+                <p className="text-sm text-slate-400">
+                  Enter your contact details and professional profile.
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block text-sm text-slate-200">
-              Full name
-              <input
-                {...form.register("personalInfo.fullName")}
-                className="mt-2 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
-              />
-            </label>
-            <label className="block text-sm text-slate-200">
-              Job title
-              <input
-                {...form.register("personalInfo.jobTitle")}
-                className="mt-2 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
-              />
-            </label>
-            <label className="block text-sm text-slate-200">
-              Email
-              <input
-                type="email"
-                {...form.register("personalInfo.email")}
-                className="mt-2 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
-              />
-            </label>
-            <label className="block text-sm text-slate-200">
-              Phone
-              <input
-                {...form.register("personalInfo.phone")}
-                className="mt-2 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
-              />
-            </label>
-            <label className="block text-sm text-slate-200">
-              Location
-              <input
-                {...form.register("personalInfo.location")}
-                className="mt-2 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
-              />
-            </label>
-            <label className="block text-sm text-slate-200">
-              Website
-              <input
-                {...form.register("personalInfo.website")}
-                className="mt-2 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
-              />
-            </label>
-            <label className="block text-sm text-slate-200">
-              LinkedIn
-              <input
-                {...form.register("personalInfo.linkedin")}
-                className="mt-2 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
-              />
-            </label>
-            <label className="block text-sm text-slate-200">
-              GitHub
-              <input
-                {...form.register("personalInfo.github")}
-                className="mt-2 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
-              />
-            </label>
-            <label className="block text-sm text-slate-200 sm:col-span-2">
-              Profile photo URL
-              <input
-                {...form.register("personalInfo.photoUrl")}
-                placeholder="https://..."
-                className="mt-2 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
-              />
-            </label>
-            <label className="block text-sm text-slate-200 sm:col-span-2">
-              Summary
-              <textarea
-                rows={4}
-                {...form.register("personalInfo.summary")}
-                className="mt-2 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
-              />
-            </label>
-          </div>
-        </section>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm text-slate-200">
+                Full name
+                <input
+                  {...form.register("personalInfo.fullName")}
+                  className="mt-2 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="block text-sm text-slate-200">
+                Job title
+                <input
+                  {...form.register("personalInfo.jobTitle")}
+                  className="mt-2 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="block text-sm text-slate-200">
+                Email
+                <input
+                  type="email"
+                  {...form.register("personalInfo.email")}
+                  className="mt-2 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="block text-sm text-slate-200">
+                Phone
+                <input
+                  {...form.register("personalInfo.phone")}
+                  className="mt-2 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="block text-sm text-slate-200">
+                Location
+                <input
+                  {...form.register("personalInfo.location")}
+                  className="mt-2 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="block text-sm text-slate-200">
+                Website
+                <input
+                  {...form.register("personalInfo.website")}
+                  className="mt-2 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="block text-sm text-slate-200">
+                LinkedIn
+                <input
+                  {...form.register("personalInfo.linkedin")}
+                  className="mt-2 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="block text-sm text-slate-200">
+                GitHub
+                <input
+                  {...form.register("personalInfo.github")}
+                  className="mt-2 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="block text-sm text-slate-200 sm:col-span-2">
+                Profile photo URL
+                <input
+                  {...form.register("personalInfo.photoUrl")}
+                  placeholder="https://..."
+                  className="mt-2 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
+                />
+              </label>
+              <label className="block text-sm text-slate-200 sm:col-span-2">
+                Summary
+                <textarea
+                  rows={4}
+                  {...form.register("personalInfo.summary")}
+                  className="mt-2 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
+                />
+              </label>
+            </div>
+          </section>
+        )}
 
-        <section className="space-y-4 rounded-3xl border border-slate-800 bg-slate-950/90 p-6">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold text-white">
-                Work experience
-              </p>
-              <p className="text-sm text-slate-400">
-                Describe your most relevant roles.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={enhanceExperience}
-              className="rounded-2xl bg-slate-800 px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-700"
-            >
-              Enhance experience
-            </button>
-          </div>
-          <div className="space-y-4">
-            {experienceFields.fields.map((field, index) => (
-              <div
-                key={field.id}
-                className="rounded-3xl border border-slate-800 bg-slate-900/90 p-4"
+        {(!multiStep || currentStep === 1) && (
+          <section className="space-y-4 rounded-3xl border border-slate-800 bg-slate-950/90 p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-white">
+                  Work experience
+                </p>
+                <p className="text-sm text-slate-400">
+                  Describe your most relevant roles.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={enhanceExperience}
+                className="rounded-2xl bg-slate-800 px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-700"
               >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="font-semibold text-white">
-                    Experience {index + 1}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => experienceFields.remove(index)}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-slate-800 px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-700"
-                  >
-                    <Trash size={14} /> Remove
-                  </button>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <input
-                    {...form.register(`experience.${index}.company`)}
-                    placeholder="Company"
-                    className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
-                  />
-                  <input
-                    {...form.register(`experience.${index}.position`)}
-                    placeholder="Position"
-                    className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
-                  />
-                  <input
-                    {...form.register(`experience.${index}.location`)}
-                    placeholder="Location"
-                    className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
-                  />
+                Enhance experience
+              </button>
+            </div>
+            <div className="space-y-4">
+              {experienceFields.fields.map((field, index) => (
+                <div
+                  key={field.id}
+                  className="rounded-3xl border border-slate-800 bg-slate-900/90 p-4"
+                >
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="font-semibold text-white">
+                      Experience {index + 1}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => experienceFields.remove(index)}
+                      className="inline-flex items-center gap-2 rounded-2xl bg-slate-800 px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-700"
+                    >
+                      <Trash size={14} /> Remove
+                    </button>
+                  </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <input
-                      type="month"
-                      {...form.register(`experience.${index}.startDate`)}
+                      {...form.register(`experience.${index}.company`)}
+                      placeholder="Company"
                       className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
                     />
                     <input
-                      type="month"
-                      {...form.register(`experience.${index}.endDate`)}
+                      {...form.register(`experience.${index}.position`)}
+                      placeholder="Position"
                       className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
                     />
+                    <input
+                      {...form.register(`experience.${index}.location`)}
+                      placeholder="Location"
+                      className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
+                    />
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <input
+                        type="month"
+                        {...form.register(`experience.${index}.startDate`)}
+                        className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
+                      />
+                      <input
+                        type="month"
+                        {...form.register(`experience.${index}.endDate`)}
+                        className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
+                      />
+                    </div>
+                    <label className="flex items-center gap-3 text-sm text-slate-300">
+                      <input
+                        type="checkbox"
+                        {...form.register(`experience.${index}.current`)}
+                        className="h-4 w-4 rounded border-slate-700 bg-slate-900 text-sky-500"
+                      />
+                      Current role
+                    </label>
                   </div>
-                  <label className="flex items-center gap-3 text-sm text-slate-300">
-                    <input
-                      type="checkbox"
-                      {...form.register(`experience.${index}.current`)}
-                      className="h-4 w-4 rounded border-slate-700 bg-slate-900 text-sky-500"
-                    />
-                    Current role
-                  </label>
+                  <textarea
+                    {...form.register(`experience.${index}.description`)}
+                    placeholder="Description"
+                    rows={4}
+                    className="mt-4 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
+                  />
                 </div>
-                <textarea
-                  {...form.register(`experience.${index}.description`)}
-                  placeholder="Description"
-                  rows={4}
-                  className="mt-4 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-sky-500"
-                />
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => experienceFields.append(createExperience())}
-              className="inline-flex items-center gap-2 rounded-2xl bg-slate-800 px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-700"
-            >
-              <Plus size={16} /> Add experience
-            </button>
-          </div>
-        </section>
+              ))}
+              <button
+                type="button"
+                onClick={() => experienceFields.append(createExperience())}
+                className="inline-flex items-center gap-2 rounded-2xl bg-slate-800 px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-700"
+              >
+                <Plus size={16} /> Add experience
+              </button>
+            </div>
+          </section>
+        )}
 
         <section className="space-y-4 rounded-3xl border border-slate-800 bg-slate-950/90 p-6">
           <div className="flex items-center justify-between gap-4">
@@ -1054,22 +1199,27 @@ export default function ResumeForm() {
           </div>
         </section>
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:justify-between">
-          <button
-            type="submit"
-            disabled={isSaving || isLoading}
-            className={`inline-flex items-center justify-center rounded-3xl px-6 py-3 text-sm font-semibold text-slate-950 transition ${
-              isSaving || isLoading
-                ? "cursor-not-allowed bg-slate-600"
-                : "bg-sky-500 hover:bg-sky-400"
-            }`}
-          >
-            <FileText size={18} /> {isSaving ? "Saving..." : "Save resume"}
-          </button>
-          <p className="text-sm text-slate-400">
-            Preview and download the resume once your details are complete.
-          </p>
-        </div>
+        {/* Step navigation or submit */}
+        {multiStep ? (
+          <StepButtons />
+        ) : (
+          <div className="flex flex-col gap-4 sm:flex-row sm:justify-between">
+            <button
+              type="submit"
+              disabled={isSaving || isLoading}
+              className={`inline-flex items-center justify-center rounded-3xl px-6 py-3 text-sm font-semibold text-slate-950 transition ${
+                isSaving || isLoading
+                  ? "cursor-not-allowed bg-slate-600"
+                  : "bg-sky-500 hover:bg-sky-400"
+              }`}
+            >
+              <FileText size={18} /> {isSaving ? "Saving..." : "Save resume"}
+            </button>
+            <p className="text-sm text-slate-400">
+              Preview and download the resume once your details are complete.
+            </p>
+          </div>
+        )}
       </form>
 
       <aside className="space-y-6 rounded-4xl border border-slate-800 bg-slate-950/90 p-6 shadow-xl shadow-slate-950/20">

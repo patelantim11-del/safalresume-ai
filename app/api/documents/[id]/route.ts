@@ -85,16 +85,33 @@ export async function PUT(
       updatedAt: new Date().toISOString(),
     };
 
+    // create a version snapshot from existing document
+    const snapshot = {
+      title: document.title,
+      template: document.template,
+      content: document.content,
+      updatedAt: document.updatedAt || new Date().toISOString(),
+    };
+
     const result = await documentsCollection.updateOne(
       { _id: new ObjectId(id) },
-      { $set: updateData },
+      {
+        $set: updateData,
+        $push: { versions: { $each: [snapshot], $position: 0 } },
+      } as unknown as any,
     );
+
+    // return updated document with versions
+    const updatedDoc = await documentsCollection.findOne({
+      _id: new ObjectId(id),
+    });
 
     await client.close();
 
     return NextResponse.json({
       message: "Document updated successfully",
       modifiedCount: result.modifiedCount,
+      document: updatedDoc,
     });
   } catch (error) {
     console.error("Error updating document:", error);
