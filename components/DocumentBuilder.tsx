@@ -2,9 +2,16 @@
 
 import { Document } from "@/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import ATSResumeForm from "./ATSResumeForm";
+import CoverLetterForm from "./CoverLetterForm";
 import FresherResumeForm from "./FresherResumeForm";
 import InternshipForm from "./InternshipForm";
+import LORForm from "./LORForm";
+import MarriageBiodataForm from "./MarriageBiodataForm";
+import PortfolioForm from "./PortfolioForm";
+import ProfessionalResumeForm from "./ProfessionalResumeForm";
 import ResumeForm from "./ResumeForm";
+import SOPForm from "./SOPForm";
 
 type Props = {
   document: Document;
@@ -23,6 +30,10 @@ function isResumeType(type: string) {
     "academic_cv",
     "freelancer_profile",
     "portfolio",
+    "cover_letter",
+    "statement_of_purpose",
+    "letter_of_recommendation",
+    "marriage_biodata",
   ].includes(type);
 }
 
@@ -159,6 +170,111 @@ export default function DocumentBuilder({
       if (document.type === "fresher_resume") {
         return (
           <FresherResumeForm
+            initialData={content}
+            multiStep={true}
+            onSave={async (values) => {
+              setContent(values as any);
+              setAutoSavePending(true);
+              await handleSave();
+              return { id: documentId };
+            }}
+          />
+        );
+      }
+
+      if (document.type === "professional_resume") {
+        return (
+          <ProfessionalResumeForm
+            initialData={content}
+            multiStep={true}
+            onSave={async (values) => {
+              setContent(values as any);
+              setAutoSavePending(true);
+              await handleSave();
+              return { id: documentId };
+            }}
+          />
+        );
+      }
+
+      if (document.type === "ats_resume") {
+        return (
+          <ATSResumeForm
+            initialData={content}
+            multiStep={true}
+            onSave={async (values) => {
+              setContent(values as any);
+              setAutoSavePending(true);
+              await handleSave();
+              return { id: documentId };
+            }}
+          />
+        );
+      }
+
+      if (document.type === "cover_letter") {
+        return (
+          <CoverLetterForm
+            initialData={content}
+            multiStep={true}
+            onSave={async (values) => {
+              setContent(values as any);
+              setAutoSavePending(true);
+              await handleSave();
+              return { id: documentId };
+            }}
+          />
+        );
+      }
+
+      if (document.type === "statement_of_purpose") {
+        return (
+          <SOPForm
+            initialData={content}
+            multiStep={true}
+            onSave={async (values) => {
+              setContent(values as any);
+              setAutoSavePending(true);
+              await handleSave();
+              return { id: documentId };
+            }}
+          />
+        );
+      }
+
+      if (document.type === "letter_of_recommendation") {
+        return (
+          <LORForm
+            initialData={content}
+            multiStep={true}
+            onSave={async (values) => {
+              setContent(values as any);
+              setAutoSavePending(true);
+              await handleSave();
+              return { id: documentId };
+            }}
+          />
+        );
+      }
+
+      if (document.type === "marriage_biodata") {
+        return (
+          <MarriageBiodataForm
+            initialData={content}
+            multiStep={true}
+            onSave={async (values) => {
+              setContent(values as any);
+              setAutoSavePending(true);
+              await handleSave();
+              return { id: documentId };
+            }}
+          />
+        );
+      }
+
+      if (document.type === "portfolio") {
+        return (
+          <PortfolioForm
             initialData={content}
             multiStep={true}
             onSave={async (values) => {
