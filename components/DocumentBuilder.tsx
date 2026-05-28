@@ -8,7 +8,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Document } from "@/types";
 import { AnimatePresence, motion } from "framer-motion";
 import { Clock3, History, RefreshCw, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ATSResumeForm from "./ATSResumeForm";
 import CoverLetterForm from "./CoverLetterForm";
 import FresherResumeForm from "./FresherResumeForm";
@@ -65,6 +65,11 @@ export default function DocumentBuilder({
     (document as any).versions || [],
   );
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<
+    "idle" | "pending" | "saving"
+  >("idle");
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const lastSavedPayload = useRef<string>("");
   // preview selection state intentionally omitted — history modal handles restores
   const [toast, setToast] = useState<{
     type: "success" | "error" | "info";
@@ -77,6 +82,16 @@ export default function DocumentBuilder({
     setTemplate(document.template || "");
     setStatus(document.status || "draft");
     setVersions((document as any).versions || []);
+
+    lastSavedPayload.current = JSON.stringify({
+      title: document.title || "",
+      template: document.template || "",
+      status: document.status || "draft",
+      content: document.content || {},
+    });
+    setAutoSavePending(false);
+    setAutoSaveStatus("idle");
+    setLastSavedAt(new Date());
   }, [document]);
 
   function showToast(type: "success" | "error" | "info", message: string) {
@@ -84,53 +99,91 @@ export default function DocumentBuilder({
     window.setTimeout(() => setToast(null), 3200);
   }
 
-  const handleSave = useCallback(async () => {
-    setSaving(true);
-    try {
+  const handleSave = useCallback(
+    async (options?: { auto?: boolean }) => {
+      const isAuto = options?.auto;
       const payload = {
         title,
         template,
         status,
         content,
       };
+      const payloadString = JSON.stringify(payload);
 
-      const res = await fetch(`/api/documents/${documentId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const message = await res.text();
-        console.error("Failed to save document", message);
-        showToast("error", "Unable to save changes.");
+      if (payloadString === lastSavedPayload.current) {
+        setAutoSavePending(false);
+        setAutoSaveStatus("idle");
+        if (!isAuto) {
+          showToast("info", "No changes to save.");
+        }
         return;
       }
 
-      const data = await res.json();
-      if (data?.document) {
-        setVersions(data.document.versions || []);
-        onUpdated?.(data.document);
-        showToast("success", "Changes saved successfully.");
-      } else {
-        showToast("info", "Save completed.");
+      setSaving(true);
+      if (isAuto) {
+        setAutoSaveStatus("saving");
       }
-      setAutoSavePending(false);
-    } catch (err) {
-      console.error("Error saving document:", err);
-      showToast("error", "Save failed due to a network error.");
-    } finally {
-      setSaving(false);
-    }
-  }, [content, documentId, onUpdated, status, template, title]);
+
+      try {
+        const res = await fetch(`/api/documents/${documentId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: payloadString,
+        });
+
+        if (!res.ok) {
+          const message = await res.text();
+          console.error("Failed to save document", message);
+          if (!isAuto) {
+            showToast("error", "Unable to save changes.");
+          }
+          setAutoSaveStatus("idle");
+          setAutoSavePending(false);
+          return;
+        }
+
+        const data = await res.json();
+        const now = new Date();
+        lastSavedPayload.current = payloadString;
+        setLastSavedAt(now);
+        setAutoSaveStatus("idle");
+        setAutoSavePending(false);
+
+        if (data?.document) {
+          if (!isAuto) {
+            setVersions(data.document.versions || []);
+          }
+          onUpdated?.(data.document);
+          if (!isAuto) {
+            showToast("success", "Changes saved successfully.");
+          }
+        } else if (!isAuto) {
+          showToast("info", "Save completed.");
+        }
+      } catch (err) {
+        console.error("Error saving document:", err);
+        if (!isAuto) {
+          showToast("error", "Save failed due to a network error.");
+        }
+        setAutoSaveStatus("idle");
+        setAutoSavePending(false);
+      } finally {
+        setSaving(false);
+      }
+    },
+    [content, documentId, onUpdated, status, template, title],
+  );
 
   useEffect(() => {
-    const id = setInterval(() => {
-      if (autoSavePending) {
-        handleSave();
-      }
-    }, 15000);
-    return () => clearInterval(id);
+    if (!autoSavePending) {
+      return;
+    }
+
+    const id = window.setTimeout(() => {
+      handleSave({ auto: true });
+    }, 2500);
+
+    return () => window.clearTimeout(id);
   }, [autoSavePending, handleSave]);
 
   async function handleDuplicate() {
@@ -180,7 +233,24 @@ export default function DocumentBuilder({
 
   function markChanged() {
     setAutoSavePending(true);
+    setAutoSaveStatus("pending");
   }
+
+  const autosaveBadgeText =
+    saving || autoSaveStatus === "saving"
+      ? "Saving..."
+      : autoSavePending
+        ? "Unsaved changes"
+        : lastSavedAt
+          ? "All changes saved"
+          : "Ready";
+
+  const autosaveBadgeVariant =
+    saving || autoSaveStatus === "saving"
+      ? "warning"
+      : autoSavePending
+        ? "destructive"
+        : "success";
 
   // activePreviewVersion is available for modal preview selection if needed
 
@@ -610,7 +680,11 @@ export default function DocumentBuilder({
             >
               {status}
             </Badge>
-            <Button onClick={handleSave} variant="primary" size="sm">
+            <Button
+              onClick={() => handleSave({ auto: false })}
+              variant="primary"
+              size="sm"
+            >
               {saving ? "Saving..." : "Save changes"}
             </Button>
             <Button
@@ -683,8 +757,8 @@ export default function DocumentBuilder({
                     Resume snapshot
                   </h3>
                 </div>
-                <Badge variant="default">
-                  Auto-save {autoSavePending ? "pending" : "ready"}
+                <Badge variant={autosaveBadgeVariant}>
+                  {autosaveBadgeText}
                 </Badge>
               </div>
               {renderPreviewCard()}
