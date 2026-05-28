@@ -1,17 +1,15 @@
-import * as React from "react";
 import { cn } from "@/lib/utils";
+import * as React from "react";
 
 const variants = {
   default:
-    "bg-slate-900 text-white border border-white/10 shadow-sm shadow-black/10 hover:bg-slate-800",
+    "bg-slate-900 text-white border border-white/10 shadow-lg shadow-black/20 hover:bg-slate-800/95",
   primary:
     "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-cyan-500/20 hover:from-blue-400 hover:to-cyan-400",
   destructive:
     "bg-rose-500 text-white shadow-lg shadow-rose-500/20 hover:bg-rose-400",
-  outline:
-    "border border-white/10 text-white bg-transparent hover:bg-white/5",
-  ghost:
-    "bg-transparent text-white hover:bg-white/5",
+  outline: "border border-white/10 text-white bg-transparent hover:bg-white/5",
+  ghost: "bg-transparent text-white hover:bg-white/5",
   secondary:
     "bg-slate-800 text-slate-100 border border-white/10 hover:bg-slate-700",
 };

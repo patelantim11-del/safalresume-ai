@@ -139,7 +139,7 @@ export default function ATSResumeForm({
     resolver: zodResolver(atsSchema),
     defaultValues,
   });
-  const [isSaving, setIsSaving] = useState(false);
+  const [, setIsSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [step, setStep] = useState(0);
   const autoSaveTimer = useRef<number | null>(null);
@@ -159,10 +159,6 @@ export default function ATSResumeForm({
   });
   const certificationFields = useFieldArray({
     name: "certifications",
-    control: form.control,
-  });
-  const achievementFields = useFieldArray({
-    name: "achievements",
     control: form.control,
   });
   const languageFields = useFieldArray({

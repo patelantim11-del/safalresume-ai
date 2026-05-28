@@ -141,7 +141,7 @@ export default function ProfessionalResumeForm({
     resolver: zodResolver(professionalSchema),
     defaultValues,
   });
-  const [isSaving, setIsSaving] = useState(false);
+  const [, setIsSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [step, setStep] = useState(0);
   const autoSaveTimer = useRef<number | null>(null);

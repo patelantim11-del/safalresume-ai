@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Document } from "@/types";
 import { AnimatePresence, motion } from "framer-motion";
-import { Clock3, History, RefreshCw, Trash2, User } from "lucide-react";
+import { Clock3, History, RefreshCw, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ATSResumeForm from "./ATSResumeForm";
 import CoverLetterForm from "./CoverLetterForm";
@@ -212,101 +212,112 @@ export default function DocumentBuilder({
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl border border-white/8 bg-slate-950/85 p-6 shadow-md"
+        whileHover={{ y: -2 }}
+        className="resume-document mx-auto w-full max-w-[210mm] overflow-hidden rounded-[2rem] border border-slate-200/10 bg-white text-slate-950 shadow-[0_40px_120px_-50px_rgba(15,23,42,0.35)] transition-all duration-300"
       >
-        <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-lg bg-white/5 flex items-center justify-center text-cyan-300">
-            <User className="w-8 h-8" />
-          </div>
-          <div className="flex-1">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-2xl font-semibold leading-tight text-white">
-                  {name}
-                </h3>
-                <p className="text-sm text-slate-300 mt-1">{titleLine}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-slate-400">
-                  {content.location || ""}
-                </p>
-                <p className="text-sm text-slate-400">{content.email || ""}</p>
-              </div>
+        <div className="resume-content p-8 sm:p-10">
+          <div className="mb-6 flex flex-col gap-4 border-b border-slate-200/50 pb-6 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.32em] text-slate-500">
+                {title ? title : "Resume preview"}
+              </p>
+              <h3 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
+                {name}
+              </h3>
+              <p className="mt-2 text-sm text-slate-600">{titleLine}</p>
             </div>
+            <div className="space-y-1 text-left sm:text-right">
+              {content.location ? (
+                <p className="text-sm text-slate-500">{content.location}</p>
+              ) : null}
+              {content.email ? (
+                <p className="text-sm text-slate-500">{content.email}</p>
+              ) : null}
+              {content.phone ? (
+                <p className="text-sm text-slate-500">{content.phone}</p>
+              ) : null}
+            </div>
+          </div>
 
-            <p className="mt-4 text-sm text-slate-300 leading-6">{summary}</p>
+          <div className="grid gap-6 lg:grid-cols-[0.62fr_0.38fr]">
+            <div className="space-y-6">
+              <section className="resume-section">
+                <h4 className="section-heading">Profile</h4>
+                <p className="text-sm leading-7 text-slate-600">{summary}</p>
+              </section>
 
-            {experiences.length > 0 && (
-              <div className="mt-5">
-                <h4 className="text-sm font-semibold text-white mb-2">
-                  Experience
-                </h4>
-                <div className="space-y-3">
-                  {experiences.slice(0, 3).map((exp: any, i: number) => (
-                    <div key={i} className="rounded-xl bg-white/3 p-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold text-white">
-                            {exp.position || exp.title || exp.role}
-                          </p>
-                          <p className="text-sm text-slate-400">
-                            {exp.company || exp.organization}
+              {experiences.length > 0 && (
+                <section className="resume-section">
+                  <h4 className="section-heading">Experience</h4>
+                  <div className="space-y-4">
+                    {experiences.slice(0, 3).map((exp: any, i: number) => (
+                      <div
+                        key={i}
+                        className="rounded-3xl border border-slate-200/60 bg-slate-50/80 p-4"
+                      >
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <p className="font-semibold text-slate-900">
+                              {exp.position || exp.title || exp.role}
+                            </p>
+                            <p className="text-sm text-slate-600">
+                              {exp.company || exp.organization}
+                            </p>
+                          </div>
+                          <p className="text-sm text-slate-500">
+                            {exp.period ||
+                              (exp.startDate && exp.endDate
+                                ? `${exp.startDate} — ${exp.endDate}`
+                                : `${exp.startDate || ""} — ${exp.endDate || "Present"}`)}
                           </p>
                         </div>
-                        <p className="text-sm text-slate-400">
-                          {exp.period || (exp.startDate && exp.endDate)
-                            ? `${exp.startDate || ""} — ${exp.endDate || "Present"}`
-                            : ""}
+                        {exp.summary ? (
+                          <p className="mt-3 text-sm leading-6 text-slate-600">
+                            {exp.summary}
+                          </p>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {education.length > 0 && (
+                <section className="resume-section">
+                  <h4 className="section-heading">Education</h4>
+                  <div className="space-y-3">
+                    {education.slice(0, 2).map((ed: any, i: number) => (
+                      <div key={i} className="text-sm">
+                        <p className="font-medium text-slate-900">
+                          {ed.school || ed.institution}
+                        </p>
+                        <p className="mt-1 text-slate-600">
+                          {ed.degree || ed.certification} • {ed.year || ""}
                         </p>
                       </div>
-                      {exp.summary && (
-                        <p className="mt-2 text-sm text-slate-300">
-                          {exp.summary}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
 
-            {education.length > 0 && (
-              <div className="mt-5">
-                <h4 className="text-sm font-semibold text-white mb-2">
-                  Education
-                </h4>
-                <div className="space-y-2">
-                  {education.slice(0, 2).map((ed: any, i: number) => (
-                    <div key={i} className="text-sm text-slate-300">
-                      <p className="font-medium text-white">
-                        {ed.school || ed.institution}
-                      </p>
-                      <p className="text-slate-400">
-                        {ed.degree || ed.certification} • {ed.year || ""}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {skills.length > 0 && (
-              <div className="mt-5">
-                <h4 className="text-sm font-semibold text-white mb-2">
-                  Skills
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {skills.slice(0, 8).map((s: any, i: number) => (
-                    <span
-                      key={i}
-                      className="text-xs bg-white/5 text-slate-200 px-2 py-1 rounded-md"
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+            <div className="space-y-6">
+              {skills.length > 0 && (
+                <section className="resume-section">
+                  <h4 className="section-heading">Skills</h4>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-1">
+                    {skills.slice(0, 8).map((s: any, i: number) => (
+                      <span
+                        key={i}
+                        className="inline-flex rounded-full bg-slate-900/10 px-3 py-2 text-sm text-slate-700"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
           </div>
         </div>
       </motion.div>

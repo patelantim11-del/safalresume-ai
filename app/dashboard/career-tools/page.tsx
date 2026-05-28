@@ -122,7 +122,7 @@ export default function CareerToolsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-black">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
       {/* Header */}
       <div className="border-b border-white/10 bg-white/5 backdrop-blur-lg sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -153,7 +153,7 @@ export default function CareerToolsPage() {
               <div className="flex items-start gap-6">
                 {/* Icon */}
                 <div
-                  className={`w-16 h-16 rounded-lg bg-linear-to-br ${tool.color} p-4 shrink-0 flex items-center justify-center text-white`}
+                  className={`w-16 h-16 rounded-lg bg-gradient-to-br ${tool.color} p-4 shrink-0 flex items-center justify-center text-white`}
                 >
                   {tool.icon}
                 </div>

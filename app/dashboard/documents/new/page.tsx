@@ -96,7 +96,7 @@ export default function NewDocumentPage() {
 
   if (!selectedType) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-black text-white">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-black text-white">
         <div className="border-b border-white/10 bg-slate-950/95 backdrop-blur-3xl">
           <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -146,7 +146,7 @@ export default function NewDocumentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-black text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-black text-white">
       <div className="border-b border-white/10 bg-slate-950/95 backdrop-blur-3xl">
         <div className="max-w-5xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
           <button

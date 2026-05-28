@@ -237,7 +237,6 @@ export default function ResumeForm({
   const autoSaveTimer = useRef<number | null>(null);
 
   const searchParams = useSearchParams();
-  const resumeId = searchParams.get("resumeId");
   const createNew = searchParams.get("new") === "true";
 
   const experienceFields = useFieldArray({
@@ -368,7 +367,7 @@ export default function ResumeForm({
           const values = form.getValues();
           await onSave(values as ResumeFormValues);
           setStatusMessage({ type: "info", text: "Auto-saved" });
-        } catch (err) {
+        } catch {
           setStatusMessage({ type: "error", text: "Auto-save failed" });
         }
       }, 3000) as unknown as number;

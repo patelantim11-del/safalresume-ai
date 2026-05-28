@@ -117,7 +117,7 @@ export default function InternshipForm({
     resolver: zodResolver(internshipSchema),
     defaultValues: defaults,
   });
-  const [isSaving, setIsSaving] = useState(false);
+  const [, setIsSaving] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const autoSaveTimer = useRef<number | null>(null);
 
@@ -164,7 +164,7 @@ export default function InternshipForm({
           const values = form.getValues();
           setIsSaving(true);
           await onSave(values as InternshipFormValues);
-        } catch (e) {
+        } catch {
         } finally {
           setIsSaving(false);
         }
@@ -182,7 +182,7 @@ export default function InternshipForm({
       if (onSave) {
         await onSave(values);
       }
-    } catch (e) {
+    } catch {
     } finally {
       setIsSaving(false);
     }
@@ -222,7 +222,7 @@ export default function InternshipForm({
           default:
             ok = true;
         }
-      } catch (err) {
+      } catch {
         ok = true;
       }
       if (!ok) return;

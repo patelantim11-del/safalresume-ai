@@ -40,15 +40,15 @@ function NavLink({
     <Link
       href={href}
       onClick={onClick}
-      className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${
+      className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${
         active
-          ? "bg-cyan-500/8 text-white ring-1 ring-cyan-400/10"
-          : "text-slate-200 hover:bg-white/3 hover:text-white"
+          ? "bg-cyan-500/12 text-white ring-1 ring-cyan-400/15 shadow-sm"
+          : "text-slate-200 hover:bg-white/5 hover:text-white"
       }`}
     >
       <div
         className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-          active ? "bg-cyan-500/20 text-cyan-300" : "bg-white/3 text-cyan-300"
+          active ? "bg-cyan-500/15 text-cyan-300" : "bg-white/5 text-cyan-300"
         }`}
       >
         <Icon className="h-4 w-4" />
@@ -72,12 +72,12 @@ export default function DashboardNav() {
 
   return (
     <>
-      <aside className="hidden md:flex fixed inset-y-0 left-0 z-50 w-72 flex-col bg-slate-950/95 border-r border-white/10 shadow-2xl shadow-black/20 backdrop-blur-3xl">
+      <aside className="hidden md:flex fixed inset-y-0 left-0 z-50 w-72 flex-col bg-slate-950/90 border-r border-white/10 shadow-[0_35px_65px_-30px_rgba(0,0,0,0.45)] backdrop-blur-3xl">
         <div className="flex h-full flex-col justify-between p-6">
           <div className="space-y-8">
             <div className="space-y-3">
               <Link href="/dashboard" className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-3xl bg-cyan-400/10 text-cyan-300 text-xl font-bold">
+                <div className="flex h-12 w-12 items-center justify-center rounded-3xl bg-cyan-400/10 text-cyan-300 text-xl font-bold shadow-sm shadow-cyan-500/10">
                   S
                 </div>
                 <div>
@@ -103,7 +103,7 @@ export default function DashboardNav() {
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-2xl border border-white/8 bg-white/3 p-5 shadow-md backdrop-blur-sm">
+            <div className="rounded-3xl border border-white/10 bg-slate-950/80 p-5 shadow-xl shadow-black/10 backdrop-blur-sm">
               <p className="text-xs uppercase tracking-[0.28em] text-cyan-300/70">
                 Upgrade
               </p>
@@ -111,7 +111,7 @@ export default function DashboardNav() {
                 Unlock premium templates and unlimited AI boosts.
               </p>
               <div className="mt-4 grid gap-2">
-                <div className="rounded-lg bg-white/5 px-3 py-2 text-xs text-slate-300">
+                <div className="rounded-2xl bg-white/5 px-3 py-2 text-xs text-slate-300">
                   Pro plan active
                 </div>
                 <Button

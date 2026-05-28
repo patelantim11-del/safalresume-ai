@@ -80,7 +80,7 @@ export default function DocumentEditorPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center px-4 py-10">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-6xl space-y-6">
           <Skeleton className="h-24 w-full" />
           <div className="grid gap-6 lg:grid-cols-[1.7fr_1fr]">
@@ -97,7 +97,7 @@ export default function DocumentEditorPage() {
 
   if (!document) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center px-4 py-10">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center px-4 py-10">
         <Card className="p-10 max-w-2xl text-center">
           <div className="space-y-4">
             <p className="text-sm uppercase tracking-[0.28em] text-cyan-300/80">
@@ -123,7 +123,7 @@ export default function DocumentEditorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-black text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-black text-white">
       <div className="border-b border-white/10 bg-slate-950/95 backdrop-blur-3xl">
         <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
