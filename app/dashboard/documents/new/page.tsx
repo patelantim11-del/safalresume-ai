@@ -1,6 +1,8 @@
 "use client";
 
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
 import { DocumentType, documentTypes } from "@/types";
 import { ArrowLeft, FileText, Save } from "lucide-react";
 import Link from "next/link";
@@ -75,6 +77,7 @@ export default function NewDocumentPage() {
       if (!response.ok) {
         const data = await response.json();
         setError(data.error || "Failed to create document");
+        setLoading(false);
         return;
       }
 
@@ -88,42 +91,51 @@ export default function NewDocumentPage() {
     }
   }
 
+  const step = selectedType ? (selectedTemplate ? 2 : 1) : 0;
+  const stepLabels = ["Choose type", "Pick template", "Finalize details"];
+
   if (!selectedType) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-black">
-        {/* Header */}
-        <div className="border-b border-white/10 bg-white/5 backdrop-blur-lg">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-6"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              Back to Dashboard
-            </Link>
-            <h1 className="text-3xl font-bold text-white">
-              Select Document Type
-            </h1>
-            <p className="text-gray-400 mt-1">
-              Choose what profile you want to create
-            </p>
+      <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-black text-white">
+        <div className="border-b border-white/10 bg-slate-950/95 backdrop-blur-3xl">
+          <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/70">
+                  New document
+                </p>
+                <h1 className="text-3xl font-semibold">Select document type</h1>
+                <p className="text-slate-400">
+                  Pick the profile you want to start with and build it using our
+                  smart editor.
+                </p>
+              </div>
+              <Link
+                href="/dashboard"
+                className="rounded-2xl border border-white/10 bg-slate-900/80 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:bg-slate-900"
+              >
+                Back to Dashboard
+              </Link>
+            </div>
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="max-w-7xl mx-auto px-4 py-10 sm:px-6 lg:px-8">
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {documentTypes.map((type) => (
               <Card
                 key={type}
-                className="glassmorphism p-6 cursor-pointer hover:border-blue-400/50 transition-all"
+                className="group cursor-pointer border-white/10 bg-slate-950/80 p-6 transition-all hover:-translate-y-1 hover:border-cyan-400/30 hover:bg-slate-900"
                 onClick={() => setSelectedType(type)}
               >
-                <FileText className="w-8 h-8 text-blue-400 mb-3" />
-                <h3 className="font-semibold text-white mb-2 capitalize">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-3xl bg-white/5 text-cyan-300 transition group-hover:bg-cyan-400/15">
+                  <FileText className="h-6 w-6" />
+                </div>
+                <h3 className="mb-2 text-lg font-semibold text-white capitalize">
                   {type.replace(/_/g, " ")}
                 </h3>
-                <p className="text-sm text-gray-400">
-                  Click to select and customize
+                <p className="text-sm leading-6 text-slate-400">
+                  Choose this layout to start a modern, premium document.
                 </p>
               </Card>
             ))}
@@ -134,92 +146,162 @@ export default function NewDocumentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-black">
-      {/* Header */}
-      <div className="border-b border-white/10 bg-white/5 backdrop-blur-lg">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-black text-white">
+      <div className="border-b border-white/10 bg-slate-950/95 backdrop-blur-3xl">
+        <div className="max-w-5xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
           <button
             onClick={() => setSelectedType(null)}
-            className="flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-6"
+            className="mb-5 inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-900/80 px-4 py-3 text-sm text-slate-100 transition hover:bg-slate-900"
           >
-            <ArrowLeft className="w-5 h-5" />
-            Change Type
+            <ArrowLeft className="h-4 w-4" />
+            Change type
           </button>
-          <h1 className="text-3xl font-bold text-white">
-            Create New {selectedType.replace(/_/g, " ")}
-          </h1>
-          <p className="text-gray-400 mt-1">
-            Customize your profile with the details below
-          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/70">
+                Create document
+              </p>
+              <h1 className="text-3xl font-semibold">
+                New {selectedType.replace(/_/g, " ")}
+              </h1>
+              <p className="text-slate-400">
+                Finalize the title and template before building your profile.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {stepLabels.map((label, index) => (
+                <span
+                  key={label}
+                  className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] transition ${
+                    index === step - 1
+                      ? "bg-cyan-500 text-slate-950"
+                      : "bg-white/5 text-slate-300"
+                  }`}
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card className="glassmorphism p-8">
-          <div className="space-y-6">
-            {/* Title Input */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Profile Title
-              </label>
-              <input
-                type="text"
-                value={documentTitle}
-                onChange={(e) => setDocumentTitle(e.target.value)}
-                placeholder="e.g., My Professional Resume"
-                className="w-full px-4 py-3 bg-gray-900/50 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500/50"
-              />
-            </div>
+      <div className="max-w-5xl mx-auto px-4 py-10 sm:px-6 lg:px-8">
+        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <Card className="p-6">
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <h2 className="text-xl font-semibold text-white">
+                  Step {step + 1}
+                </h2>
+                <p className="text-sm text-slate-400">
+                  {step === 1
+                    ? "Pick the template that best matches your career story."
+                    : "Give your document a memorable title and confirm the template."}
+                </p>
+              </div>
 
-            {/* Template Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-3">
-                Template
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {selectedType &&
-                  DOCUMENT_TYPE_TEMPLATES[selectedType].map((template) => (
-                    <button
-                      key={template}
-                      onClick={() => setSelectedTemplate(template)}
-                      className={`p-4 rounded-lg border-2 transition-all font-medium capitalize ${
-                        selectedTemplate === template
-                          ? "bg-blue-500/20 border-blue-500 text-blue-400"
-                          : "bg-gray-900/50 border-white/10 text-gray-400 hover:border-white/20"
-                      }`}
-                    >
-                      {template}
-                    </button>
-                  ))}
+              <div className="space-y-6">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-300">
+                    Document type
+                  </label>
+                  <div className="rounded-3xl border border-white/10 bg-slate-950/75 px-4 py-4 text-sm text-slate-200">
+                    {selectedType.replace(/_/g, " ")}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-300">
+                    Template
+                  </label>
+                  <div className="grid gap-3 md:grid-cols-3">
+                    {DOCUMENT_TYPE_TEMPLATES[selectedType].map((template) => (
+                      <button
+                        key={template}
+                        onClick={() => setSelectedTemplate(template)}
+                        className={`rounded-3xl border px-4 py-4 text-left text-sm transition ${
+                          selectedTemplate === template
+                            ? "border-cyan-400 bg-cyan-500/10 text-white"
+                            : "border-white/10 bg-slate-950/75 text-slate-300 hover:border-white/20"
+                        }`}
+                      >
+                        <p className="font-semibold capitalize">{template}</p>
+                        <p className="mt-1 text-xs text-slate-400">
+                          Modern layout with premium spacing.
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-300">
+                    Profile title
+                  </label>
+                  <Input
+                    placeholder="E.g. Senior Product Designer Resume"
+                    value={documentTitle}
+                    onChange={(event) => setDocumentTitle(event.target.value)}
+                  />
+                </div>
+
+                {error ? (
+                  <div className="rounded-3xl bg-rose-500/10 p-4 text-sm text-rose-300">
+                    {error}
+                  </div>
+                ) : null}
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button
+                    onClick={handleCreateDocument}
+                    disabled={loading}
+                    variant="primary"
+                    size="sm"
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    {loading ? "Creating..." : "Create document"}
+                  </Button>
+                  <Link
+                    href="/dashboard/documents"
+                    className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
+                  >
+                    Skip for now
+                  </Link>
+                </div>
               </div>
             </div>
+          </Card>
 
-            {/* Error Message */}
-            {error && (
-              <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-                <p className="text-red-400 text-sm">{error}</p>
+          <Card className="p-6">
+            <div className="space-y-5">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/70">
+                  Quick preview
+                </p>
+                <h2 className="mt-2 text-xl font-semibold text-white">
+                  Build your document
+                </h2>
               </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex items-center gap-4 pt-4">
-              <button
-                onClick={handleCreateDocument}
-                disabled={loading}
-                className="flex-1 px-6 py-3 bg-linear-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-blue-500/50 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                <Save className="w-5 h-5" />
-                {loading ? "Creating..." : "Create Profile"}
-              </button>
-              <Link
-                href="/dashboard"
-                className="px-6 py-3 bg-gray-900/50 hover:bg-gray-900 text-gray-300 font-semibold rounded-lg transition-all border border-white/10"
-              >
-                Cancel
-              </Link>
+              <div className="rounded-[1.5rem] bg-slate-950/80 p-5 text-sm text-slate-300">
+                <p className="mb-3 font-semibold text-white">
+                  Selected template
+                </p>
+                <p>{selectedTemplate || "No template selected yet."}</p>
+              </div>
+              <div className="rounded-[1.5rem] bg-slate-950/80 p-5 text-sm text-slate-300">
+                <p className="mb-3 font-semibold text-white">What to expect</p>
+                <ul className="space-y-3">
+                  <li>
+                    • A guided wizard experience for easy document creation.
+                  </li>
+                  <li>• Clean modern spacing and sectioned layout.</li>
+                  <li>• Premium preview and version history support.</li>
+                </ul>
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
       </div>
     </div>
   );
