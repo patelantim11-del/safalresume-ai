@@ -3,21 +3,20 @@ import * as React from "react";
 
 const variants = {
   default:
-    "bg-slate-900 text-white border border-white/10 shadow-lg shadow-black/20 hover:bg-slate-800/95",
+    "bg-slate-900 text-white border border-white/8 hover:bg-slate-850 shadow-[0_6px_18px_-10px_rgba(2,6,23,0.6)]",
   primary:
-    "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-cyan-500/20 hover:from-blue-400 hover:to-cyan-400",
-  destructive:
-    "bg-rose-500 text-white shadow-lg shadow-rose-500/20 hover:bg-rose-400",
-  outline: "border border-white/10 text-white bg-transparent hover:bg-white/5",
-  ghost: "bg-transparent text-white hover:bg-white/5",
+    "bg-gradient-to-r from-[#2563EB] to-[#06B6D4] text-white shadow-md hover:opacity-95",
+  destructive: "bg-rose-500 text-white shadow-sm hover:bg-rose-400",
+  outline: "border border-white/10 text-white bg-transparent hover:bg-white/3",
+  ghost: "bg-transparent text-white hover:bg-white/3",
   secondary:
-    "bg-slate-800 text-slate-100 border border-white/10 hover:bg-slate-700",
+    "bg-slate-800 text-slate-100 border border-white/8 hover:bg-slate-800/95",
 };
 
 const sizes = {
-  default: "h-11 px-5 py-2 text-sm",
-  sm: "h-9 px-3 text-sm",
-  lg: "h-12 px-6 text-base",
+  default: "h-12 px-6 text-sm",
+  sm: "h-10 px-4 text-sm",
+  lg: "h-14 px-8 text-base",
 };
 
 type Variant = keyof typeof variants;
