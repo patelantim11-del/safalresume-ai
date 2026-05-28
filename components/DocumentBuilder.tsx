@@ -534,7 +534,7 @@ export default function DocumentBuilder({
 
   return (
     <div className="space-y-6">
-      <div className="sticky top-4 z-20 rounded-[2rem] border border-white/10 bg-slate-950/90 p-5 shadow-[0_32px_90px_-45px_rgba(0,0,0,0.9)] backdrop-blur-3xl">
+      <div className="sticky top-4 z-30 rounded-4xl border border-white/10 bg-white/5 backdrop-blur-lg p-5 shadow-lg">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="space-y-2">
             <p className="text-xs uppercase tracking-[0.32em] text-cyan-300/70">
@@ -581,7 +581,7 @@ export default function DocumentBuilder({
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.7fr_1fr]">
+      <div className="grid gap-6 md:grid-cols-1 xl:grid-cols-[1.6fr_1fr]">
         <div className="space-y-6">
           <Card className="p-6">
             <div className="grid gap-6">
@@ -614,7 +614,7 @@ export default function DocumentBuilder({
                     />
                   </div>
                 </div>
-                <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+                <div className="grid gap-4">
                   <div className="space-y-6">{builder}</div>
                 </div>
               </div>
@@ -623,24 +623,25 @@ export default function DocumentBuilder({
         </div>
 
         <div className="space-y-6">
-          <Card className="p-6">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.28em] text-cyan-300/70">
-                  Live preview
-                </p>
-                <h3 className="mt-2 text-lg font-semibold text-white">
-                  Resume snapshot
-                </h3>
+          <div className="sticky top-28 space-y-6">
+            <Card className="p-6">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.28em] text-cyan-300/70">
+                    Live preview
+                  </p>
+                  <h3 className="mt-2 text-lg font-semibold text-white">
+                    Resume snapshot
+                  </h3>
+                </div>
+                <Badge variant="default">
+                  Auto-save {autoSavePending ? "pending" : "ready"}
+                </Badge>
               </div>
-              <Badge variant="default">
-                Auto-save {autoSavePending ? "pending" : "ready"}
-              </Badge>
-            </div>
-            {renderPreviewCard()}
-          </Card>
-
-          <Card className="p-6">
+              {renderPreviewCard()}
+            </Card>
+          
+            <Card className="p-6">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.28em] text-slate-400">
@@ -657,7 +658,7 @@ export default function DocumentBuilder({
                 versions.slice(0, 3).map((version: any, index: number) => (
                   <motion.div
                     key={version.id || version._id || index}
-                    className="rounded-3xl border border-white/10 bg-slate-950/80 p-4 transition hover:border-cyan-400/40"
+                    className="rounded-3xl border border-white/10 bg-white/3 p-4 transition hover:border-cyan-400/40 backdrop-blur-sm"
                     whileHover={{ y: -2 }}
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -669,9 +670,7 @@ export default function DocumentBuilder({
                           {new Date(version.updatedAt).toLocaleString()}
                         </p>
                       </div>
-                      <Badge variant="success">
-                        {index === 0 ? "Latest" : "Snapshot"}
-                      </Badge>
+                      <Badge variant="success">{index === 0 ? "Latest" : "Snapshot"}</Badge>
                     </div>
                     <p className="mt-3 text-sm leading-6 text-slate-400 line-clamp-2">
                       {version.notes ||
@@ -688,28 +687,12 @@ export default function DocumentBuilder({
               )}
             </div>
             <div className="mt-6 flex items-center justify-between gap-3">
-              <Button
-                onClick={() => setHistoryOpen(true)}
-                variant="secondary"
-                size="sm"
-              >
+              <Button onClick={() => setHistoryOpen(true)} variant="secondary" size="sm">
                 <History className="mr-2 h-4 w-4" /> View full timeline
-              </Button>
-              <Button
-                onClick={() => {
-                  if (activeVersion?.content) {
-                    setContent(activeVersion.content);
-                    markChanged();
-                    showToast("success", "Version restored in preview.");
-                  }
-                }}
-                variant="ghost"
-                size="sm"
-              >
-                Restore preview
               </Button>
             </div>
           </Card>
+          </div>
         </div>
       </div>
 
