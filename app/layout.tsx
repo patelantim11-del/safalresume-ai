@@ -25,7 +25,10 @@ export default async function RootLayout({
         {payload ? (
           <div className="min-h-screen">
             <DashboardNav />
-            <main className="md:ml-72 transition-all duration-200">
+            <main
+              className="transition-all duration-200"
+              style={{ marginLeft: "var(--sidebar-width, 18rem)" }}
+            >
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
                 {children}
               </div>
