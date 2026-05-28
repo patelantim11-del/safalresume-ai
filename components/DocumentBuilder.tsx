@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Document } from "@/types";
 import { AnimatePresence, motion } from "framer-motion";
-import { Clock3, History, RefreshCw, Trash2 } from "lucide-react";
+import { Clock3, History, RefreshCw, Trash2, User } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ATSResumeForm from "./ATSResumeForm";
 import CoverLetterForm from "./CoverLetterForm";
@@ -65,9 +65,7 @@ export default function DocumentBuilder({
     (document as any).versions || [],
   );
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [activePreviewVersion, setActivePreviewVersion] = useState<
-    string | null
-  >(null);
+  // preview selection state intentionally omitted — history modal handles restores
   const [toast, setToast] = useState<{
     type: "success" | "error" | "info";
     message: string;
@@ -79,11 +77,6 @@ export default function DocumentBuilder({
     setTemplate(document.template || "");
     setStatus(document.status || "draft");
     setVersions((document as any).versions || []);
-    setActivePreviewVersion(
-      ((document as any).versions || [])[0]?.id ||
-        ((document as any).versions || [])[0]?._id ||
-        null,
-    );
   }, [document]);
 
   function showToast(type: "success" | "error" | "info", message: string) {
@@ -189,89 +182,134 @@ export default function DocumentBuilder({
     setAutoSavePending(true);
   }
 
-  const activeVersion = useMemo(() => {
-    if (!versions?.length) return null;
-    const selected = versions.find(
-      (version: any) =>
-        version.id === activePreviewVersion ||
-        version._id === activePreviewVersion,
-    );
-    return selected || versions[0];
-  }, [activePreviewVersion, versions]);
+  // activePreviewVersion is available for modal preview selection if needed
 
   function renderPreviewCard() {
-    if (!content || Object.keys(content).length === 0) {
-      return (
-        <div className="rounded-3xl border border-dashed border-white/10 bg-slate-950/60 p-6 text-center text-sm text-slate-400">
-          Start adding details to see the live preview here.
-        </div>
-      );
-    }
-
+    // Build a polished resume preview using available content fields
     const name =
       content.personalInfo?.fullName ||
       content.fullName ||
       title ||
-      "Untitled profile";
-    const headline =
+      "Your Name";
+    const titleLine =
       content.personalInfo?.jobTitle ||
       content.position ||
       content.title ||
-      "Craft a compelling summary to stand out.";
+      "Professional Title";
     const summary =
       content.personalInfo?.summary ||
       content.summary ||
       content.careerObjective ||
-      content.description ||
-      "A preview of your resume content appears here.";
-    const highlights = [] as string[];
+      "Write a short summary that highlights your strengths and achievements.";
 
-    if (Array.isArray(content.experience) && content.experience.length) {
-      highlights.push(
-        content.experience[0]?.position ||
-          content.experience[0]?.company ||
-          "Experience section added",
-      );
-    }
-    if (Array.isArray(content.education) && content.education.length) {
-      highlights.push(
-        content.education[0]?.school || "Education section ready",
-      );
-    }
-    if (Array.isArray(content.skills) && content.skills.length) {
-      highlights.push(`${content.skills.length} skills listed`);
-    }
+    const experiences = Array.isArray(content.experience)
+      ? content.experience
+      : [];
+    const education = Array.isArray(content.education) ? content.education : [];
+    const skills = Array.isArray(content.skills) ? content.skills : [];
 
     return (
-      <div className="rounded-[1.75rem] border border-white/10 bg-slate-950/80 p-6 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.6)]">
-        <div className="mb-5">
-          <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/70">
-            Live preview
-          </p>
-          <h3 className="mt-3 text-2xl font-semibold text-white">{name}</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-300">{headline}</p>
-        </div>
-        <div className="space-y-4">
-          <p className="text-sm text-slate-400">{summary}</p>
-          {highlights.length ? (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {highlights.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="rounded-3xl bg-white/5 p-4 text-sm text-slate-200"
-                >
-                  {item}
-                </div>
-              ))}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-2xl border border-white/8 bg-slate-950/85 p-6 shadow-md"
+      >
+        <div className="flex items-start gap-4">
+          <div className="w-16 h-16 rounded-lg bg-white/5 flex items-center justify-center text-cyan-300">
+            <User className="w-8 h-8" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-2xl font-semibold leading-tight text-white">
+                  {name}
+                </h3>
+                <p className="text-sm text-slate-300 mt-1">{titleLine}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-slate-400">
+                  {content.location || ""}
+                </p>
+                <p className="text-sm text-slate-400">{content.email || ""}</p>
+              </div>
             </div>
-          ) : null}
-          <div className="rounded-3xl bg-slate-900/80 p-4 text-sm text-slate-400">
-            <pre className="whitespace-pre-wrap break-words text-slate-300">
-              {JSON.stringify(content, null, 2)}
-            </pre>
+
+            <p className="mt-4 text-sm text-slate-300 leading-6">{summary}</p>
+
+            {experiences.length > 0 && (
+              <div className="mt-5">
+                <h4 className="text-sm font-semibold text-white mb-2">
+                  Experience
+                </h4>
+                <div className="space-y-3">
+                  {experiences.slice(0, 3).map((exp: any, i: number) => (
+                    <div key={i} className="rounded-xl bg-white/3 p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-white">
+                            {exp.position || exp.title || exp.role}
+                          </p>
+                          <p className="text-sm text-slate-400">
+                            {exp.company || exp.organization}
+                          </p>
+                        </div>
+                        <p className="text-sm text-slate-400">
+                          {exp.period || (exp.startDate && exp.endDate)
+                            ? `${exp.startDate || ""} — ${exp.endDate || "Present"}`
+                            : ""}
+                        </p>
+                      </div>
+                      {exp.summary && (
+                        <p className="mt-2 text-sm text-slate-300">
+                          {exp.summary}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {education.length > 0 && (
+              <div className="mt-5">
+                <h4 className="text-sm font-semibold text-white mb-2">
+                  Education
+                </h4>
+                <div className="space-y-2">
+                  {education.slice(0, 2).map((ed: any, i: number) => (
+                    <div key={i} className="text-sm text-slate-300">
+                      <p className="font-medium text-white">
+                        {ed.school || ed.institution}
+                      </p>
+                      <p className="text-slate-400">
+                        {ed.degree || ed.certification} • {ed.year || ""}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {skills.length > 0 && (
+              <div className="mt-5">
+                <h4 className="text-sm font-semibold text-white mb-2">
+                  Skills
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {skills.slice(0, 8).map((s: any, i: number) => (
+                    <span
+                      key={i}
+                      className="text-xs bg-white/5 text-slate-200 px-2 py-1 rounded-md"
+                    >
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
@@ -640,58 +678,64 @@ export default function DocumentBuilder({
               </div>
               {renderPreviewCard()}
             </Card>
-          
+
             <Card className="p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.28em] text-slate-400">
-                  Version history
-                </p>
-                <h3 className="mt-1 text-lg font-semibold text-white">
-                  Timeline overview
-                </h3>
-              </div>
-              <Badge variant="muted">{versions?.length ?? 0} entries</Badge>
-            </div>
-            <div className="mt-6 space-y-4">
-              {versions?.length ? (
-                versions.slice(0, 3).map((version: any, index: number) => (
-                  <motion.div
-                    key={version.id || version._id || index}
-                    className="rounded-3xl border border-white/10 bg-white/3 p-4 transition hover:border-cyan-400/40 backdrop-blur-sm"
-                    whileHover={{ y: -2 }}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-medium text-white">
-                          {version.title || `Version ${index + 1}`}
-                        </p>
-                        <p className="text-sm text-slate-400">
-                          {new Date(version.updatedAt).toLocaleString()}
-                        </p>
-                      </div>
-                      <Badge variant="success">{index === 0 ? "Latest" : "Snapshot"}</Badge>
-                    </div>
-                    <p className="mt-3 text-sm leading-6 text-slate-400 line-clamp-2">
-                      {version.notes ||
-                        version.summary ||
-                        "Restore a previous state quickly."}
-                    </p>
-                  </motion.div>
-                ))
-              ) : (
-                <div className="rounded-3xl border border-dashed border-white/10 bg-slate-950/60 p-6 text-center text-sm text-slate-400">
-                  No versions have been saved yet. Save changes to create your
-                  first snapshot.
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.28em] text-slate-400">
+                    Version history
+                  </p>
+                  <h3 className="mt-1 text-lg font-semibold text-white">
+                    Timeline overview
+                  </h3>
                 </div>
-              )}
-            </div>
-            <div className="mt-6 flex items-center justify-between gap-3">
-              <Button onClick={() => setHistoryOpen(true)} variant="secondary" size="sm">
-                <History className="mr-2 h-4 w-4" /> View full timeline
-              </Button>
-            </div>
-          </Card>
+                <Badge variant="muted">{versions?.length ?? 0} entries</Badge>
+              </div>
+              <div className="mt-6 space-y-4">
+                {versions?.length ? (
+                  versions.slice(0, 3).map((version: any, index: number) => (
+                    <motion.div
+                      key={version.id || version._id || index}
+                      className="rounded-3xl border border-white/10 bg-white/3 p-4 transition hover:border-cyan-400/40 backdrop-blur-sm"
+                      whileHover={{ y: -2 }}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-medium text-white">
+                            {version.title || `Version ${index + 1}`}
+                          </p>
+                          <p className="text-sm text-slate-400">
+                            {new Date(version.updatedAt).toLocaleString()}
+                          </p>
+                        </div>
+                        <Badge variant="success">
+                          {index === 0 ? "Latest" : "Snapshot"}
+                        </Badge>
+                      </div>
+                      <p className="mt-3 text-sm leading-6 text-slate-400 line-clamp-2">
+                        {version.notes ||
+                          version.summary ||
+                          "Restore a previous state quickly."}
+                      </p>
+                    </motion.div>
+                  ))
+                ) : (
+                  <div className="rounded-3xl border border-dashed border-white/10 bg-slate-950/60 p-6 text-center text-sm text-slate-400">
+                    No versions have been saved yet. Save changes to create your
+                    first snapshot.
+                  </div>
+                )}
+              </div>
+              <div className="mt-6 flex items-center justify-between gap-3">
+                <Button
+                  onClick={() => setHistoryOpen(true)}
+                  variant="secondary"
+                  size="sm"
+                >
+                  <History className="mr-2 h-4 w-4" /> View full timeline
+                </Button>
+              </div>
+            </Card>
           </div>
         </div>
       </div>
