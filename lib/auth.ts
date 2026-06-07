@@ -4,15 +4,25 @@ import jwt from "jsonwebtoken";
 import { MongoClient, ObjectId } from "mongodb";
 import { NextRequest } from "next/server";
 
-const JWT_SECRET = process.env.JWT_SECRET ?? "resume-builder-secret";
+function getJwtSecret() {
+  if (!process.env.JWT_SECRET) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "Missing JWT_SECRET environment variable in production. Set JWT_SECRET to a strong secret.",
+      );
+    }
+    return "resume-builder-secret";
+  }
+
+  return process.env.JWT_SECRET;
+}
 export const AUTH_COOKIE_NAME = "resume-auth";
 
 export function getTokenFromRequest(request: NextRequest) {
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
-  console.log("[auth] Cookie detection", {
+  console.debug("[auth] Cookie detection", {
     cookieName: AUTH_COOKIE_NAME,
     tokenFound: Boolean(token),
-    tokenSnippet: token ? `${token.slice(0, 10)}...` : null,
   });
   return token || null;
 }
@@ -34,29 +44,23 @@ export function signToken(
 ) {
   const token = jwt.sign(
     { id: user.id, email: user.email, fullName: user.fullName },
-    JWT_SECRET,
+    getJwtSecret(),
     {
       expiresIn: "7d",
     },
   );
-  console.log("[auth] Signed JWT", {
-    userId: user.id,
-    email: user.email,
-  });
+  console.debug("[auth] Signed JWT", { userId: user.id });
   return token;
 }
 
 export function verifyToken(token: string) {
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as {
+    const payload = jwt.verify(token, getJwtSecret()) as {
       id: string;
       email: string;
       fullName: string;
     };
-    console.log("[auth] JWT verification succeeded", {
-      userId: payload.id,
-      email: payload.email,
-    });
+    console.debug("[auth] JWT verification succeeded", { userId: payload.id });
     return payload;
   } catch (error) {
     console.warn("[auth] JWT verification failed", {

@@ -14,22 +14,24 @@ export default async function ResumePage() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-50">
-      <section className="mx-auto max-w-7xl px-6 py-10 sm:px-10">
-        <div className="mb-10 rounded-4xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl shadow-slate-950/40">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <section className="mx-auto max-w-[1600px] px-4 py-4 sm:px-6 lg:px-8">
+        <div className="mb-4 border-b border-slate-800 pb-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-sm uppercase tracking-[0.3em] text-sky-400">
+              <p className="text-xs uppercase tracking-[0.24em] text-sky-400">
                 Resume Builder
               </p>
-              <h1 className="mt-3 text-4xl font-semibold sm:text-5xl">
-                Create your professional resume with AI.
+              <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">
+                Fill in your resume details
               </h1>
             </div>
-            <p className="max-w-xl text-slate-400">
+            <p className="max-w-xl text-sm text-slate-400">
               Fill in your details, preview your layout, and export ATS-friendly
               PDF resumes instantly.
             </p>
           </div>
+        </div>
+        <div>
           <Suspense
             fallback={<div className="text-slate-400">Loading editor...</div>}
           >

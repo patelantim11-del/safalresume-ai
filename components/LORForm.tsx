@@ -1,5 +1,6 @@
 "use client";
 
+import { exportPreviewPdf } from "@/lib/exportPdf";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -286,7 +287,7 @@ export default function LORForm({
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={() => window.print()}
+                onClick={() => exportPreviewPdf()}
                 className="rounded-3xl bg-sky-500 px-4 py-3 text-white"
               >
                 Export PDF

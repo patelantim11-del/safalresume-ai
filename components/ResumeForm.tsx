@@ -1,23 +1,27 @@
 "use client";
+import { exportPreviewPdf } from "@/lib/exportPdf";
 
+// CareerAssistant moved to dedicated /toolkit page
 import CareerAssistant from "@/components/CareerAssistant";
-import { resumeTemplates } from "@/types";
+import { Modal } from "@/components/ui/Modal";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AnimatePresence, motion } from "framer-motion";
 import { Download, FileText, Plus, Sparkles, Trash } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
 
+// Minimal resume schema & helpers (keeps the form self-contained)
 const resumeSchema = z.object({
-  title: z.string().min(3),
-  template: z.enum(resumeTemplates),
+  title: z.string().min(1).optional(),
+  template: z.string().optional(),
   personalInfo: z.object({
-    fullName: z.string().min(2),
-    email: z.string().email(),
-    phone: z.string().min(8),
-    location: z.string().min(2),
-    jobTitle: z.string().min(2),
+    fullName: z.string().optional(),
+    email: z.string().optional(),
+    phone: z.string().optional(),
+    location: z.string().optional(),
+    jobTitle: z.string().optional(),
     website: z.string().optional(),
     linkedin: z.string().optional(),
     github: z.string().optional(),
@@ -28,77 +32,62 @@ const resumeSchema = z.object({
     .array(
       z.object({
         id: z.string(),
-        company: z.string(),
-        position: z.string(),
-        location: z.string(),
-        startDate: z.string(),
-        endDate: z.string(),
-        current: z.boolean(),
-        description: z.string(),
+        company: z.string().optional(),
+        position: z.string().optional(),
+        location: z.string().optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+        current: z.boolean().optional(),
+        description: z.string().optional(),
       }),
     )
-    .min(1),
+    .default([]),
   education: z
     .array(
       z.object({
         id: z.string(),
-        school: z.string(),
-        degree: z.string(),
-        field: z.string(),
-        location: z.string(),
-        startDate: z.string(),
-        endDate: z.string(),
+        school: z.string().optional(),
+        degree: z.string().optional(),
+        field: z.string().optional(),
+        location: z.string().optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
       }),
     )
-    .min(1),
+    .default([]),
   skills: z
     .array(
       z.object({
         id: z.string(),
-        name: z.string(),
-        level: z.enum(["Beginner", "Intermediate", "Advanced", "Expert"]),
+        name: z.string().optional(),
+        level: z.string().optional(),
       }),
     )
-    .min(1),
+    .default([]),
   projects: z
     .array(
       z.object({
         id: z.string(),
-        name: z.string(),
-        description: z.string(),
+        name: z.string().optional(),
+        description: z.string().optional(),
         link: z.string().optional(),
       }),
     )
-    .min(1),
+    .default([]),
   certifications: z
-    .array(
-      z.object({
-        id: z.string(),
-        value: z.string(),
-      }),
-    )
+    .array(z.object({ id: z.string(), value: z.string().optional() }))
     .default([]),
   achievements: z
-    .array(
-      z.object({
-        id: z.string(),
-        value: z.string(),
-      }),
-    )
+    .array(z.object({ id: z.string(), value: z.string().optional() }))
     .default([]),
   languages: z
-    .array(
-      z.object({
-        id: z.string(),
-        value: z.string(),
-      }),
-    )
+    .array(z.object({ id: z.string(), value: z.string().optional() }))
     .default([]),
   socialLinks: z
     .array(
       z.object({
         id: z.string(),
-        label: z.string(),
+        label: z.string().optional(),
         url: z.string().optional(),
       }),
     )
@@ -107,13 +96,17 @@ const resumeSchema = z.object({
 
 type ResumeFormValues = z.infer<typeof resumeSchema>;
 
-function generateFieldId(prefix: string) {
-  return `${prefix}-${crypto.randomUUID()}`;
+function genId(prefix = "id") {
+  try {
+    return `${prefix}-${crypto.randomUUID()}`;
+  } catch {
+    return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+  }
 }
 
-function createExperience(id = generateFieldId("experience")) {
+function createExperience() {
   return {
-    id,
+    id: genId("experience"),
     company: "",
     position: "",
     location: "",
@@ -124,9 +117,9 @@ function createExperience(id = generateFieldId("experience")) {
   };
 }
 
-function createEducation(id = generateFieldId("education")) {
+function createEducation() {
   return {
-    id,
+    id: genId("education"),
     school: "",
     degree: "",
     field: "",
@@ -136,28 +129,28 @@ function createEducation(id = generateFieldId("education")) {
   };
 }
 
-function createSkill(id = generateFieldId("skill")) {
-  return { id, name: "", level: "Intermediate" as const };
+function createSkill() {
+  return { id: genId("skill"), name: "", level: "Intermediate" };
 }
 
-function createProject(id = generateFieldId("project")) {
-  return { id, name: "", description: "", link: "" };
+function createProject() {
+  return { id: genId("project"), name: "", description: "", link: "" };
 }
 
-function createCertification(id = generateFieldId("certification")) {
-  return { id, value: "" };
+function createCertification() {
+  return { id: genId("certification"), value: "" };
 }
 
-function createAchievement(id = generateFieldId("achievement")) {
-  return { id, value: "" };
+function createAchievement() {
+  return { id: genId("achievement"), value: "" };
 }
 
-function createLanguage(id = generateFieldId("language")) {
-  return { id, value: "" };
+function createLanguage() {
+  return { id: genId("language"), value: "" };
 }
 
-function createSocialLink(id = generateFieldId("social")) {
-  return { id, label: "", url: "" };
+function createSocialLink() {
+  return { id: genId("social"), label: "", url: "" };
 }
 
 const defaultValues: ResumeFormValues = {
@@ -222,6 +215,7 @@ export default function ResumeForm({
   const form = useForm<ResumeFormValues>({
     resolver: zodResolver(resumeSchema),
     defaultValues,
+    mode: "onChange",
   });
 
   const [savedResumeId, setSavedResumeId] = useState<string | null>(null);
@@ -232,6 +226,8 @@ export default function ResumeForm({
     type: "success" | "error" | "info";
     text: string;
   } | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  // theme reserved for future (light/dark) toggling (placeholder)
 
   const [currentStep, setCurrentStep] = useState(0);
   const autoSaveTimer = useRef<number | null>(null);
@@ -366,7 +362,8 @@ export default function ResumeForm({
         try {
           const values = form.getValues();
           await onSave(values as ResumeFormValues);
-          setStatusMessage({ type: "info", text: "Auto-saved" });
+          setLastSavedAt(Date.now());
+          setStatusMessage({ type: "success", text: "Auto-saved" });
         } catch {
           setStatusMessage({ type: "error", text: "Auto-save failed" });
         }
@@ -379,6 +376,70 @@ export default function ResumeForm({
   }, [form, onSave]);
 
   const previewValues = form.watch();
+
+  const builderSteps = [
+    "Personal",
+    "Experience",
+    "Education",
+    "Skills & Projects",
+    "Certifications",
+    "Languages & Socials",
+    "Preview",
+  ];
+
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const sectionRefs = useRef<Array<HTMLElement | null>>([]);
+  const previewRef = useRef<HTMLElement | null>(null);
+
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [versions, setVersions] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [selectedVersion, setSelectedVersion] = useState<any | null>(null);
+  const [restoring, setRestoring] = useState(false);
+
+  const [previewScale, setPreviewScale] = useState(1);
+  const [isPreviewVisible, setIsPreviewVisible] = useState(true);
+
+  function scrollToStep(index: number) {
+    setCurrentStep(index);
+    const el =
+      sectionRefs.current[index] || previewRef.current || formRef.current;
+    try {
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch {
+      // ignore
+    }
+  }
+
+  function zoomIn() {
+    setPreviewScale((s) => Math.min(1.75, +(s + 0.1).toFixed(2)));
+  }
+  function zoomOut() {
+    setPreviewScale((s) => Math.max(0.5, +(s - 0.1).toFixed(2)));
+  }
+  function fitPage() {
+    setPreviewScale(1);
+  }
+
+  // (collapse feature reserved for future)
+
+  const completion = useMemo(() => {
+    const values = form.getValues();
+    const checks: boolean[] = [];
+    checks.push(Boolean(values.title && values.title.trim().length >= 3));
+    checks.push(Boolean(values.personalInfo?.fullName?.trim()));
+    checks.push(Boolean(values.personalInfo?.email?.trim()));
+    checks.push(Boolean(values.personalInfo?.jobTitle?.trim()));
+    checks.push(
+      Array.isArray(values.experience) && values.experience.length > 0,
+    );
+    checks.push(Array.isArray(values.education) && values.education.length > 0);
+    checks.push(
+      Array.isArray(values.skills) &&
+        values.skills.some((s) => s.name && s.name.trim()),
+    );
+    return Math.round((checks.filter(Boolean).length / checks.length) * 100);
+  }, [form]);
 
   const templateStyle = useMemo(() => {
     switch (previewValues.template) {
@@ -399,8 +460,158 @@ export default function ResumeForm({
     }
   }, [previewValues.template]);
 
+  // IntersectionObserver: track which section is visible to highlight left nav
+  useEffect(() => {
+    const els = sectionRefs.current.filter(Boolean) as Element[];
+    if (!els.length) return;
+    let observer: IntersectionObserver | null = null;
+    try {
+      observer = new IntersectionObserver(
+        (entries) => {
+          const visible = entries
+            .filter((e) => e.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+          if (visible.length) {
+            const idx = els.indexOf(visible[0].target as Element);
+            if (idx >= 0) setCurrentStep(idx);
+          }
+        },
+        { threshold: [0.25, 0.5, 0.75] },
+      );
+
+      els.forEach((el) => observer?.observe(el));
+    } catch {
+      // ignore
+    }
+
+    return () => {
+      if (observer) els.forEach((el) => observer?.unobserve(el));
+      observer = null;
+    };
+  }, [sectionRefs]);
+
+  // Simple UI actions
+  function handleDuplicate() {
+    const values = form.getValues();
+    form.reset({ ...values, title: `Copy of ${values.title}` } as any);
+    setSavedResumeId(null);
+    setStatusMessage({ type: "info", text: "Duplicated locally." });
+  }
+
+  function handleDelete() {
+    form.reset(defaultValues as any);
+    setSavedResumeId(null);
+    setStatusMessage({
+      type: "info",
+      text: "Cleared locally. (No server delete)",
+    });
+  }
+
+  function handleHistory() {
+    if (!savedResumeId) {
+      setStatusMessage({
+        type: "info",
+        text: "No saved resume to show history.",
+      });
+      return;
+    }
+    // open modal and fetch versions
+    setHistoryOpen(true);
+  }
+
+  useEffect(() => {
+    async function fetchVersions() {
+      if (!historyOpen) return;
+      if (!savedResumeId) return;
+      setHistoryLoading(true);
+      try {
+        const res = await fetch(`/api/resumes/${savedResumeId}/versions`);
+        if (!res.ok) {
+          setStatusMessage({
+            type: "error",
+            text: "Unable to fetch versions.",
+          });
+          setVersions([]);
+          return;
+        }
+        const data = await res.json();
+        setVersions(Array.isArray(data.versions) ? data.versions : []);
+      } catch {
+        setStatusMessage({ type: "error", text: "Failed to fetch versions." });
+      } finally {
+        setHistoryLoading(false);
+      }
+    }
+
+    fetchVersions();
+  }, [historyOpen, savedResumeId]);
+
+  async function restoreVersion(version: any) {
+    if (!savedResumeId) return;
+    if (!version) return;
+    const ok = confirm(
+      "Restore this version? This will overwrite current content.",
+    );
+    if (!ok) return;
+    setRestoring(true);
+    try {
+      const res = await fetch(`/api/resumes/${savedResumeId}/versions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          versionId: version.id ?? version._id ?? version.versionId,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setStatusMessage({
+          type: "error",
+          text: `Restore failed: ${data?.error || res.statusText}`,
+        });
+        return;
+      }
+      const data = await res.json();
+      const resume = data?.resume;
+      if (resume) {
+        form.reset({
+          title: resume.title ?? defaultValues.title,
+          template: resume.template ?? defaultValues.template,
+          personalInfo: {
+            ...defaultValues.personalInfo,
+            ...(resume.personalInfo ?? {}),
+          },
+          experience: resume.experience?.length
+            ? resume.experience
+            : [createExperience()],
+          education: resume.education?.length
+            ? resume.education
+            : [createEducation()],
+          skills: resume.skills?.length ? resume.skills : [createSkill()],
+          projects: resume.projects?.length
+            ? resume.projects
+            : [createProject()],
+          certifications: resume.certifications ?? [],
+          achievements: resume.achievements ?? [],
+          languages: resume.languages ?? [],
+          socialLinks: resume.socialLinks ?? [],
+        } as any);
+        setStatusMessage({ type: "success", text: "Version restored." });
+        setHistoryOpen(false);
+      }
+    } catch {
+      setStatusMessage({
+        type: "error",
+        text: "Restore failed due to network error.",
+      });
+    } finally {
+      setRestoring(false);
+    }
+  }
+
   function generateSummary() {
-    const { jobTitle, location } = form.getValues("personalInfo");
+    const personal = form.getValues("personalInfo") || {};
+    const jobTitle = (personal as any).jobTitle;
+    const location = (personal as any).location;
     const summary = `Results-driven ${jobTitle || "professional"} from ${location || "your city"} with strong experience in leadership, strategy, and delivery.`;
     form.setValue("personalInfo.summary", summary);
   }
@@ -413,12 +624,12 @@ export default function ResumeForm({
       "Problem Solving",
       "Stakeholder Management",
     ];
+    const currentSkills = form.getValues("skills") || [];
     suggestions.forEach((skill) => {
-      if (
-        !form
-          .getValues("skills")
-          .some((item) => item.name.toLowerCase() === skill.toLowerCase())
-      ) {
+      const exists = currentSkills.some(
+        (item: any) => (item?.name || "").toLowerCase() === skill.toLowerCase(),
+      );
+      if (!exists) {
         skillFields.append({
           id: crypto.randomUUID(),
           name: skill,
@@ -452,64 +663,72 @@ export default function ResumeForm({
   }
 
   async function onSubmit(values: ResumeFormValues) {
-    setIsSaving(true);
-    setStatusMessage(null);
+    return (async () => {
+      setIsSaving(true);
+      setStatusMessage(null);
 
-    try {
-      if (onSave) {
-        await onSave(values);
-        setStatusMessage({
-          type: "success",
-          text: "Saved via parent handler.",
-        });
-      } else {
-        const payload = savedResumeId
-          ? { ...values, id: savedResumeId }
-          : values;
-        const response = await fetch("/api/resumes", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
+      try {
+        if (onSave) {
+          await onSave(values);
+          setStatusMessage({
+            type: "success",
+            text: "Saved via parent handler.",
+          });
+        } else {
+          const payload = savedResumeId
+            ? { ...values, id: savedResumeId }
+            : values;
+          const response = await fetch("/api/resumes", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
 
-        let data: any = null;
-        try {
-          data = await response.json();
-        } catch {}
+          let data: any = null;
+          try {
+            data = await response.json();
+          } catch {}
 
-        if (!response.ok) {
-          const errMsg =
-            data?.error ||
-            data?.message ||
-            JSON.stringify(data) ||
-            "Unknown error";
-          setStatusMessage({ type: "error", text: `Save failed: ${errMsg}` });
-          return;
+          if (!response.ok) {
+            const errMsg =
+              data?.error ||
+              data?.message ||
+              JSON.stringify(data) ||
+              "Unknown error";
+            setStatusMessage({ type: "error", text: `Save failed: ${errMsg}` });
+            return;
+          }
+
+          const resumeId = data?.resume?.id;
+          if (resumeId) setSavedResumeId(resumeId);
+
+          setStatusMessage({
+            type: "success",
+            text: "Resume saved successfully.",
+          });
         }
-
-        const resumeId = data?.resume?.id;
-        if (resumeId) {
-          setSavedResumeId(resumeId);
-        }
-
+        setLastSavedAt(Date.now());
+      } catch (err: any) {
         setStatusMessage({
-          type: "success",
-          text: "Resume saved successfully.",
+          type: "error",
+          text: `Save failed: ${err?.message ?? String(err)}`,
         });
+      } finally {
+        setIsSaving(false);
       }
-    } catch (err: any) {
-      setStatusMessage({
-        type: "error",
-        text: `Save failed: ${err?.message ?? String(err)}`,
-      });
-    } finally {
-      setIsSaving(false);
-    }
+    })();
   }
 
   function downloadPdf() {
-    window.print();
+    // Export only the preview using html2pdf helper
+    exportPreviewPdf();
   }
+
+  const formatTime = useCallback((ts: number | null) => {
+    if (!ts) return "-";
+    const d = new Date(ts);
+    return d.toLocaleString();
+  }, []);
 
   function StepButtons() {
     const steps = [
@@ -596,11 +815,129 @@ export default function ResumeForm({
   }
 
   return (
-    <div className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
+    <div className="grid gap-8 xl:grid-cols-[220px_1fr_0.9fr]">
+      {/* Left navigation (hidden on small screens) */}
+      <nav className="hidden xl:block">
+        <div className="sticky top-8 space-y-4">
+          <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-4">
+            <p className="text-xs uppercase tracking-[0.3em] text-sky-400">
+              Sections
+            </p>
+            <div className="mt-3 space-y-2">
+              {builderSteps.map((step, idx) => (
+                <button
+                  key={step}
+                  onClick={() => scrollToStep(idx)}
+                  className={`w-full text-left rounded-xl px-3 py-2 text-sm transition-colors ${
+                    currentStep === idx
+                      ? "bg-sky-500 text-white"
+                      : "text-slate-300 hover:bg-slate-800"
+                  }`}
+                >
+                  {step}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </nav>
       <form
+        ref={(el) => {
+          formRef.current = el;
+        }}
         onSubmit={form.handleSubmit(onSubmit)}
         className="space-y-8 rounded-4xl border border-slate-800 bg-slate-900/90 p-8 shadow-xl shadow-slate-950/20"
       >
+        {/* Top sticky action bar */}
+        <div className="sticky top-6 z-20 -mx-8 mb-4 rounded-t-4xl bg-gradient-to-b from-slate-900/80 to-transparent px-8 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => form.handleSubmit(onSubmit)()}
+                className="inline-flex items-center gap-2 rounded-2xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white"
+              >
+                <FileText size={16} /> Save
+              </button>
+              <button
+                type="button"
+                onClick={downloadPdf}
+                className="inline-flex items-center gap-2 rounded-2xl bg-slate-800 px-3 py-2 text-sm text-slate-200"
+              >
+                <Download size={14} /> PDF
+              </button>
+              <button
+                type="button"
+                onClick={handleHistory}
+                className="inline-flex items-center gap-2 rounded-2xl bg-slate-800 px-3 py-2 text-sm text-slate-200"
+              >
+                History
+              </button>
+              <button
+                type="button"
+                onClick={handleDuplicate}
+                className="inline-flex items-center gap-2 rounded-2xl bg-slate-800 px-3 py-2 text-sm text-slate-200"
+              >
+                Duplicate
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="inline-flex items-center gap-2 rounded-2xl bg-rose-700 px-3 py-2 text-sm text-white"
+              >
+                Delete
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={zoomOut}
+                  className="rounded-2xl bg-slate-800 px-3 py-2 text-sm text-slate-200"
+                >
+                  -
+                </button>
+                <div className="text-sm text-slate-200">
+                  {Math.round(previewScale * 100)}%
+                </div>
+                <button
+                  type="button"
+                  onClick={zoomIn}
+                  className="rounded-2xl bg-slate-800 px-3 py-2 text-sm text-slate-200"
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  onClick={fitPage}
+                  className="rounded-2xl bg-slate-800 px-3 py-2 text-sm text-slate-200"
+                >
+                  Fit
+                </button>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="hidden sm:block">
+                  <div className="w-40 rounded-full bg-slate-800/50 px-2 py-1">
+                    <div className="h-2 rounded-full bg-slate-700">
+                      <div
+                        className="h-2 rounded-full bg-sky-500"
+                        style={{ width: `${completion}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsPreviewVisible((v) => !v)}
+                  className="rounded-2xl bg-slate-800 px-3 py-2 text-sm text-slate-200"
+                >
+                  {isPreviewVisible ? "Hide" : "Show"} Preview
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
         <div className="space-y-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -628,19 +965,25 @@ export default function ResumeForm({
               </button>
             </div>
           </div>
-          {statusMessage ? (
-            <div
-              className={`rounded-3xl border px-4 py-3 text-sm ${
-                statusMessage.type === "success"
-                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
-                  : statusMessage.type === "error"
-                    ? "border-rose-500/30 bg-rose-500/10 text-rose-200"
-                    : "border-slate-700 bg-slate-900 text-slate-300"
-              }`}
-            >
-              {statusMessage.text}
-            </div>
-          ) : null}
+          <AnimatePresence>
+            {statusMessage ? (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.18 }}
+                className={`rounded-3xl border px-4 py-3 text-sm ${
+                  statusMessage.type === "success"
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+                    : statusMessage.type === "error"
+                      ? "border-rose-500/30 bg-rose-500/10 text-rose-200"
+                      : "border-slate-700 bg-slate-900 text-slate-300"
+                }`}
+              >
+                {statusMessage.text}
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block text-sm text-slate-200">
               Resume title
@@ -668,7 +1011,12 @@ export default function ResumeForm({
         </div>
 
         {(!multiStep || currentStep === 0) && (
-          <section className="space-y-4 rounded-3xl border border-slate-800 bg-slate-950/90 p-6">
+          <section
+            ref={(el) => {
+              sectionRefs.current[0] = el;
+            }}
+            className="space-y-4 rounded-3xl border border-slate-800 bg-slate-950/90 p-6"
+          >
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold text-white">
@@ -758,7 +1106,12 @@ export default function ResumeForm({
         )}
 
         {(!multiStep || currentStep === 1) && (
-          <section className="space-y-4 rounded-3xl border border-slate-800 bg-slate-950/90 p-6">
+          <section
+            ref={(el) => {
+              sectionRefs.current[1] = el;
+            }}
+            className="space-y-4 rounded-3xl border border-slate-800 bg-slate-950/90 p-6"
+          >
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold text-white">
@@ -850,7 +1203,12 @@ export default function ResumeForm({
           </section>
         )}
 
-        <section className="space-y-4 rounded-3xl border border-slate-800 bg-slate-950/90 p-6">
+        <section
+          ref={(el) => {
+            sectionRefs.current[2] = el;
+          }}
+          className="space-y-4 rounded-3xl border border-slate-800 bg-slate-950/90 p-6"
+        >
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-white">Education</p>
@@ -923,7 +1281,12 @@ export default function ResumeForm({
           </div>
         </section>
 
-        <section className="space-y-4 rounded-3xl border border-slate-800 bg-slate-950/90 p-6">
+        <section
+          ref={(el) => {
+            sectionRefs.current[3] = el;
+          }}
+          className="space-y-4 rounded-3xl border border-slate-800 bg-slate-950/90 p-6"
+        >
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-white">
@@ -1031,7 +1394,12 @@ export default function ResumeForm({
           </div>
         </section>
 
-        <section className="grid gap-4 rounded-3xl border border-slate-800 bg-slate-950/90 p-6 lg:grid-cols-2">
+        <section
+          ref={(el) => {
+            sectionRefs.current[4] = el;
+          }}
+          className="grid gap-4 rounded-3xl border border-slate-800 bg-slate-950/90 p-6 lg:grid-cols-2"
+        >
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -1108,7 +1476,12 @@ export default function ResumeForm({
           </div>
         </section>
 
-        <section className="rounded-3xl border border-slate-800 bg-slate-950/90 p-6">
+        <section
+          ref={(el) => {
+            sectionRefs.current[5] = el;
+          }}
+          className="rounded-3xl border border-slate-800 bg-slate-950/90 p-6"
+        >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-semibold text-white">
@@ -1221,7 +1594,49 @@ export default function ResumeForm({
         )}
       </form>
 
-      <aside className="space-y-6 rounded-4xl border border-slate-800 bg-slate-950/90 p-6 shadow-xl shadow-slate-950/20">
+      {/* Mobile bottom toolbar for quick actions */}
+      <AnimatePresence>
+        {isMounted && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            className="fixed bottom-4 left-1/2 z-40 mx-auto -translate-x-1/2 w-[92%] rounded-3xl bg-slate-900/80 p-3 shadow-lg xl:hidden"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <button
+                  aria-label="Toggle preview"
+                  onClick={() => setIsPreviewVisible((v) => !v)}
+                  className="rounded-2xl bg-slate-800 px-3 py-2 text-sm text-slate-200"
+                >
+                  {isPreviewVisible ? "Hide" : "Show"} Preview
+                </button>
+                <button
+                  aria-label="Save resume"
+                  onClick={() => form.handleSubmit(onSubmit)()}
+                  className="rounded-2xl bg-sky-500 px-3 py-2 text-sm text-white"
+                >
+                  Save
+                </button>
+              </div>
+              <div className="text-sm text-slate-300">
+                {lastSavedAt
+                  ? `Saved ${formatTime(lastSavedAt)}`
+                  : "Not saved yet"}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <aside
+        ref={(el) => {
+          previewRef.current = el;
+        }}
+        aria-live="polite"
+        className="space-y-6 rounded-4xl border border-slate-800 bg-slate-950/90 p-6 shadow-xl shadow-slate-950/20"
+      >
         <CareerAssistant
           resume={previewValues}
           onApplySummary={generateSummary}
@@ -1246,129 +1661,217 @@ export default function ResumeForm({
             </h3>
           </div>
         </div>
-        {isMounted ? (
-          <div
-            className={`overflow-hidden rounded-[1.75rem] border ${templateStyle}`}
-          >
-            <div className="p-8">
-              <div className="space-y-2 border-b border-slate-800 pb-5">
-                <p className="text-sm uppercase tracking-[0.3em] text-sky-300">
-                  {previewValues.title}
-                </p>
-                <h2 className="text-3xl font-semibold">
-                  {previewValues.personalInfo.fullName || "Your Name"}
-                </h2>
-                <p className="text-slate-300">
-                  {previewValues.personalInfo.jobTitle || "Job Title"}
-                </p>
-              </div>
-
-              <div className="mt-6 flex flex-col gap-4 text-slate-300">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400">
-                    Summary
+        <div
+          id="resume-preview"
+          style={{ display: isPreviewVisible ? undefined : "none" }}
+          className={`overflow-hidden rounded-[1.75rem] border ${templateStyle}`}
+        >
+          {isMounted ? (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              transition={{ duration: 0.25 }}
+            >
+              <div className="p-8">
+                <div className="space-y-2 border-b border-slate-800 pb-5">
+                  <p className="text-sm uppercase tracking-[0.3em] text-sky-300">
+                    {previewValues.title}
                   </p>
-                  <p className="mt-2 text-sm leading-7">
-                    {previewValues.personalInfo.summary ||
-                      "Write a concise professional summary to capture recruiter attention."}
+                  <h2 className="text-3xl font-semibold">
+                    {previewValues.personalInfo.fullName || "Your Name"}
+                  </h2>
+                  <p className="text-slate-300">
+                    {previewValues.personalInfo.jobTitle || "Job Title"}
                   </p>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400">
-                      Contact
-                    </p>
-                    <p className="mt-2 text-sm">
-                      {previewValues.personalInfo.email || "email@example.com"}
-                    </p>
-                    <p className="mt-1 text-sm">
-                      {previewValues.personalInfo.phone || "+91 98765 43210"}
-                    </p>
-                    <p className="mt-1 text-sm">
-                      {previewValues.personalInfo.location || "City, Country"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400">
-                      Links
-                    </p>
-                    <p className="mt-2 text-sm">
-                      {previewValues.personalInfo.website || "Portfolio link"}
-                    </p>
-                  </div>
-                </div>
-              </div>
 
-              <div className="mt-6 grid gap-4">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400">
-                    Experience
-                  </p>
-                  <div className="mt-3 space-y-4">
-                    {previewValues.experience.slice(0, 2).map((experience) => (
-                      <div key={experience.id}>
-                        <p className="font-semibold text-slate-100">
-                          {experience.position || "Position"} at{" "}
-                          {experience.company || "Company"}
-                        </p>
-                        <p className="text-sm text-slate-400">
-                          {experience.startDate || "Start"} -{" "}
-                          {experience.current
-                            ? "Present"
-                            : experience.endDate || "End"}
-                        </p>
-                        <p className="mt-2 text-sm leading-6 text-slate-300">
-                          {experience.description ||
-                            "Write a concise accomplishment-oriented summary of your role."}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="mt-6 flex flex-col gap-4 text-slate-300">
                   <div>
                     <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400">
-                      Skills
+                      Summary
                     </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {previewValues.skills.slice(0, 6).map((skill) => (
-                        <span
-                          key={skill.id}
-                          className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-200"
-                        >
-                          {skill.name || "Skill"}
-                        </span>
-                      ))}
+                    <p className="mt-2 text-sm leading-7">
+                      {previewValues.personalInfo.summary ||
+                        "Write a concise professional summary to capture recruiter attention."}
+                    </p>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400">
+                        Contact
+                      </p>
+                      <p className="mt-2 text-sm">
+                        {previewValues.personalInfo.email ||
+                          "email@example.com"}
+                      </p>
+                      <p className="mt-1 text-sm">
+                        {previewValues.personalInfo.phone || "+91 98765 43210"}
+                      </p>
+                      <p className="mt-1 text-sm">
+                        {previewValues.personalInfo.location || "City, Country"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400">
+                        Links
+                      </p>
+                      <p className="mt-2 text-sm">
+                        {previewValues.personalInfo.website || "Portfolio link"}
+                      </p>
                     </div>
                   </div>
+                </div>
+
+                <div className="mt-6 grid gap-4">
                   <div>
                     <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400">
-                      Languages
+                      Experience
                     </p>
-                    <div className="mt-3 flex flex-wrap gap-2 text-sm text-slate-300">
-                      {previewValues.languages
-                        .filter((item) => Boolean(item?.value))
-                        .map((language, index) => (
-                          <span
-                            key={`${language?.value}-${index}`}
-                            className="rounded-full bg-slate-800 px-3 py-1"
-                          >
-                            {language.value}
-                          </span>
+                    <div className="mt-3 space-y-4">
+                      {previewValues.experience
+                        .slice(0, 2)
+                        .map((experience) => (
+                          <div key={experience.id}>
+                            <p className="font-semibold text-slate-100">
+                              {experience.position || "Position"} at{" "}
+                              {experience.company || "Company"}
+                            </p>
+                            <p className="text-sm text-slate-400">
+                              {experience.startDate || "Start"} -{" "}
+                              {experience.current
+                                ? "Present"
+                                : experience.endDate || "End"}
+                            </p>
+                            <p className="mt-2 text-sm leading-6 text-slate-300">
+                              {experience.description ||
+                                "Write a concise accomplishment-oriented summary of your role."}
+                            </p>
+                          </div>
                         ))}
                     </div>
                   </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400">
+                        Skills
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {previewValues.skills.slice(0, 6).map((skill) => (
+                          <span
+                            key={skill.id}
+                            className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-200"
+                          >
+                            {skill.name || "Skill"}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400">
+                        Languages
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2 text-sm text-slate-300">
+                        {previewValues.languages
+                          .filter((item) => Boolean(item?.value))
+                          .map((language, index) => (
+                            <span
+                              key={`${language?.value}-${index}`}
+                              className="rounded-full bg-slate-800 px-3 py-1"
+                            >
+                              {language.value}
+                            </span>
+                          ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
+            </motion.div>
+          ) : (
+            <div className="p-8 text-sm text-slate-400">
+              Preview will appear once the builder is mounted.
             </div>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-[1.75rem] border border-slate-800 bg-slate-950/80 p-8 text-sm text-slate-400">
-            Preview will appear once the builder is mounted.
-          </div>
-        )}
+          )}
+        </div>
       </aside>
+      <Modal
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        title="Resume Versions"
+      >
+        <div className="space-y-4">
+          {historyLoading ? (
+            <div className="space-y-2">
+              <div className="h-4 w-3/4 rounded bg-slate-800/50" />
+              <div className="h-4 w-1/2 rounded bg-slate-800/50" />
+            </div>
+          ) : null}
+
+          {!historyLoading && versions.length === 0 && (
+            <p className="text-slate-400 text-center py-8">
+              No saved versions yet.
+            </p>
+          )}
+
+          {!historyLoading &&
+            versions.map((version, idx) => (
+              <div
+                key={version.id ?? version._id ?? idx}
+                className="p-4 rounded-2xl border border-slate-700 bg-slate-900/40"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-white">
+                      Version {versions.length - idx}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {new Date(
+                        version.timestamp || version.createdAt || Date.now(),
+                      ).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setSelectedVersion(version)}
+                      className="rounded-2xl bg-slate-800 px-3 py-2 text-sm text-slate-200"
+                    >
+                      Preview
+                    </button>
+                    <button
+                      onClick={() => restoreVersion(version)}
+                      disabled={restoring}
+                      className="rounded-2xl bg-sky-500 px-3 py-2 text-sm text-white"
+                    >
+                      {restoring ? "Restoring..." : "Restore"}
+                    </button>
+                  </div>
+                </div>
+                {version.changes && (
+                  <p className="text-sm text-slate-300 mt-2 line-clamp-3">
+                    {version.changes}
+                  </p>
+                )}
+              </div>
+            ))}
+
+          {selectedVersion && (
+            <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-900/40 p-4">
+              <p className="text-sm font-semibold text-white">Preview</p>
+              <div className="mt-2 text-sm text-slate-300 max-h-64 overflow-auto">
+                <pre className="whitespace-pre-wrap">
+                  {JSON.stringify(
+                    selectedVersion.content || selectedVersion,
+                    null,
+                    2,
+                  )}
+                </pre>
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

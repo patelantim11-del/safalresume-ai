@@ -15,25 +15,23 @@ declare global {
 let cachedClientPromise: Promise<MongoClient> | undefined;
 
 function createClientPromise() {
-  console.log(
-    "[MongoDB] MONGODB_URI exists:",
+  console.debug(
+    "[MongoDB] connecting (uri present?):",
     !!process.env.MONGODB_URI,
     "NODE_ENV:",
     process.env.NODE_ENV,
-    "VERCEL_ENV:",
-    process.env.VERCEL_ENV,
-    "NEXT_RUNTIME:",
-    process.env.NEXT_RUNTIME,
   );
 
   if (!uri) {
     throw new Error("MONGODB_URI environment variable is required.");
   }
 
-  console.log(
-    "[MongoDB] Connecting to cluster:",
-    uri.split("@")[1] || "unknown",
-  );
+  try {
+    const cluster = uri.split("@")[1] || "unknown";
+    console.debug("[MongoDB] Connecting to cluster:", cluster);
+  } catch {
+    console.debug("[MongoDB] Connecting to cluster: unknown");
+  }
   const client = new MongoClient(uri, options);
 
   return client

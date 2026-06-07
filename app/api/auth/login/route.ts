@@ -31,11 +31,17 @@ export async function POST(request: NextRequest) {
       .collection(USERS_COLLECTION)
       .findOne({ email: parsed.data.email });
 
+    const ip = request.headers.get("x-forwarded-for") || "local";
     if (
       !user ||
       !user.passwordHash ||
       !(await verifyPassword(parsed.data.password, user.passwordHash))
     ) {
+      console.warn("[login] Failed login attempt", {
+        email: parsed.data.email,
+        ip,
+        reason: user ? "invalid-password" : "user-not-found",
+      });
       return NextResponse.json(
         { error: "Invalid email or password." },
         { status: 401 },

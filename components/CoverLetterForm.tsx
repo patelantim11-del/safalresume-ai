@@ -1,5 +1,6 @@
 "use client";
 
+import { exportPreviewPdf } from "@/lib/exportPdf";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -95,9 +96,7 @@ export default function CoverLetterForm({
     }
   }
 
-  function nextStep() {
-    setStep((current) => Math.min(2, current + 1));
-  }
+  // (nextStep removed — navigation handled via controls in the UI)
 
   function prevStep() {
     setStep((current) => Math.max(0, current - 1));
@@ -288,21 +287,13 @@ export default function CoverLetterForm({
               </button>
               <button
                 type="button"
-                onClick={nextStep}
-                disabled={!multiStep || step === stepLabels.length - 1}
-                className="rounded-3xl bg-slate-800 px-4 py-3 text-white disabled:opacity-50"
-              >
-                Next
-              </button>
-            </div>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => window.print()}
+                onClick={() => exportPreviewPdf()}
                 className="rounded-3xl bg-sky-500 px-4 py-3 text-white"
               >
                 Export PDF
               </button>
+            </div>
+            <div className="flex gap-3">
               <button
                 type="submit"
                 className="rounded-3xl bg-emerald-500 px-4 py-3 text-white"

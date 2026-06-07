@@ -21,6 +21,9 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
       <body className="bg-gradient-to-br from-slate-900 via-slate-950 to-black text-white antialiased selection:bg-cyan-300/30 selection:text-white overflow-x-hidden">
         {payload ? (
           <div className="min-h-screen">

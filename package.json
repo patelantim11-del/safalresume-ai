@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:export": "echo \"export test removed: html2canvas/html2pdf/jsPDF no longer used\""
   },
   "dependencies": {
     "@hookform/resolvers": "^3.1.1",
@@ -18,22 +19,27 @@
     "lucide-react": "^0.468.0",
     "mongodb": "^6.11.0",
     "next": "^15.5.6",
+    "next-auth": "^4.22.1",
+    "nodemailer": "^7.0.0",
     "razorpay": "^2.9.6",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-hook-form": "^7.48.0",
     "recharts": "^2.10.3",
     "tailwind-merge": "^2.5.5",
-    "zod": "^3.23.2"
+    "zod": "^3.23.2",
+    "puppeteer-core": "^20.0.0",
+    "@sparticuz/chromium": "*"
   },
   "overrides": {
     "postcss": "^8.5.10"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "^4.3.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.2",
     "@types/node": "^20",
+    "@types/nodemailer": "^8.0.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@typescript-eslint/eslint-plugin": "^8.59.4",
@@ -41,6 +47,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.1.0",
     "eslint-plugin-next": "^0.0.0",
+    "puppeteer": "^25.1.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

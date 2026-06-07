@@ -1,5 +1,6 @@
 "use client";
 
+import { exportPreviewPdf } from "@/lib/exportPdf";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
@@ -229,9 +230,16 @@ export default function ATSResumeForm({
     <>
       {step === 0 && (
         <section className="space-y-4 rounded-3xl border border-slate-800 bg-slate-950/90 p-6">
-          <h3 className="text-xl font-semibold text-white">
-            Personal Information (ATS-optimized)
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-semibold text-white">Personal</h3>
+            <button
+              type="button"
+              onClick={() => exportPreviewPdf()}
+              className="rounded-3xl bg-sky-500 px-4 py-3 text-white"
+            >
+              Export PDF
+            </button>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <input
               {...form.register("personalInfo.fullName")}
@@ -717,7 +725,7 @@ export default function ATSResumeForm({
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={() => window.print()}
+                onClick={() => exportPreviewPdf()}
                 className="rounded-3xl bg-sky-500 px-4 py-3 text-white"
               >
                 Export PDF

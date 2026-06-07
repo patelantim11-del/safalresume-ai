@@ -113,7 +113,7 @@ export default async function ResumeViewPage({
           </div>
         </div>
 
-        <article className="resume-document text-slate-950">
+        <article id="resume-preview" className="resume-document text-slate-950">
           <header className="space-y-6 border-b border-slate-200 pb-6">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
               <div className="space-y-4">

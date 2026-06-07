@@ -15,6 +15,7 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
+import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -35,7 +36,7 @@ const navSections = [
         label: "ATS Analyzer",
         icon: Sparkles,
       },
-      { href: "/dashboard/career-tools", label: "Career Tools", icon: Layers },
+      { href: "/toolkit", label: "Career Toolkit", icon: Layers },
     ],
   },
   {
@@ -101,8 +102,7 @@ export default function DashboardNav() {
 
   async function handleLogout() {
     setIsLoggingOut(true);
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/auth/login");
+    await signOut({ callbackUrl: "/auth/login" });
   }
 
   const renderNav = (compact?: boolean) => (

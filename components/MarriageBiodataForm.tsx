@@ -1,5 +1,6 @@
 "use client";
 
+import { exportPreviewPdf } from "@/lib/exportPdf";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
@@ -265,7 +266,10 @@ export default function MarriageBiodataForm({
               <button
                 type="button"
                 onClick={() =>
-                  hobbiesFields.append({ id: `hobby-${crypto.randomUUID()}`, value: "" })
+                  hobbiesFields.append({
+                    id: `hobby-${crypto.randomUUID()}`,
+                    value: "",
+                  })
                 }
                 className="mt-2 rounded-3xl bg-slate-800 px-4 py-3 text-white"
               >
@@ -373,7 +377,7 @@ export default function MarriageBiodataForm({
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={() => window.print()}
+                onClick={() => exportPreviewPdf()}
                 className="rounded-3xl bg-sky-500 px-4 py-3 text-white"
               >
                 Export PDF

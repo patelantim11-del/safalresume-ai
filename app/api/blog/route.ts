@@ -43,10 +43,8 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error fetching blog posts:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch blog posts" },
-      { status: 500 },
-    );
+    // Return an empty list instead of a 500 when the database is unavailable
+    return NextResponse.json({ posts: [], total: 0, pages: 0 });
   }
 }
 

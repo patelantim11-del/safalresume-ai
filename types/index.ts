@@ -403,6 +403,9 @@ export interface User {
   fullName: string;
   email: string;
   passwordHash: string;
+  // Password reset token (stored as sha256 hash) and expiry (ms since epoch)
+  resetToken?: string;
+  resetTokenExpiry?: number;
   username?: string;
   profileUrl?: string;
   bio?: string;

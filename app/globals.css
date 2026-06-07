@@ -31,12 +31,7 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background: radial-gradient(
-    circle at top,
-    #111827 0%,
-    #020617 30%,
-    #000 100%
-  );
+  background: #020617;
   color: #f8fafc;
   font-size: var(--type-base);
   line-height: 1.6;
@@ -85,6 +80,109 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+.resume-builder-form section {
+  border-color: rgba(51, 65, 85, 0.9);
+  border-radius: 1rem;
+  background: rgba(15, 23, 42, 0.68);
+  padding: clamp(1rem, 1.4vw, 1.35rem);
+}
+
+.resume-builder-form section > div[class*="rounded-3xl"],
+.resume-builder-form section > div[class*="rounded-2xl"] {
+  border-radius: 0.875rem;
+  background: rgba(15, 23, 42, 0.5);
+  padding: clamp(0.875rem, 1.2vw, 1.125rem);
+}
+
+.resume-builder-form input,
+.resume-builder-form select,
+.resume-builder-form textarea {
+  width: 100%;
+  min-height: 4.25rem;
+  border-radius: 0.75rem;
+  padding: 1.125rem 1.25rem;
+  font-size: 1.03rem;
+  line-height: 1.6;
+  background-color: rgba(2, 6, 23, 0.92);
+}
+
+.resume-builder-form textarea {
+  min-height: 200px;
+  resize: vertical;
+}
+
+.resume-builder-form label {
+  color: #e2e8f0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.resume-builder-form .grid {
+  row-gap: 1.35rem;
+}
+
+.resume-stepper {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 189, 248, 0.55) rgba(15, 23, 42, 0.85);
+}
+
+.resume-stepper::-webkit-scrollbar {
+  height: 6px;
+}
+
+.resume-stepper::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.85);
+  border-radius: 999px;
+}
+
+.resume-stepper::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.55);
+  border-radius: 999px;
+}
+
+.resume-preview-panel {
+  max-width: 100%;
+  min-width: 280px;
+  resize: horizontal;
+}
+
+.resume-preview-panel > details > div > div {
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+@media (max-width: 640px) {
+  .resume-builder-form {
+    border-radius: 1rem;
+  }
+
+  .resume-builder-form section {
+    padding: 1rem;
+  }
+
+  .resume-builder-form section > div[class*="rounded-3xl"],
+  .resume-builder-form section > div[class*="rounded-2xl"] {
+    padding: 1rem;
+  }
+
+  .resume-builder-form input,
+  .resume-builder-form select,
+  .resume-builder-form textarea {
+    font-size: 1rem;
+    min-height: 4rem;
+  }
+
+  .resume-builder-form textarea {
+    min-height: 200px;
+  }
+
+  .resume-preview-panel {
+    min-width: 0;
+    resize: none;
+  }
 }
 
 ::selection {

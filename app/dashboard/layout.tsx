@@ -1,5 +1,5 @@
-import { verifyToken } from "@/lib/auth";
-import { cookies } from "next/headers";
+import { authOptions } from "@/lib/nextauth";
+import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { ReactNode } from "react";
 
@@ -8,10 +8,9 @@ export default async function DashboardLayout({
 }: {
   children: ReactNode;
 }) {
-  const token = (await cookies()).get("resume-auth")?.value;
-  const payload = token ? verifyToken(token) : null;
+  const session = await getServerSession(authOptions as any);
 
-  if (!payload) {
+  if (!session) {
     redirect("/auth/login");
   }
 
