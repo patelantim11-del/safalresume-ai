@@ -1,3 +1,54 @@
+import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import { connectToDatabase } from "@/lib/mongodb";
+import { USERS_COLLECTION } from "@/models/user";
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { fullName, email, password } = body as {
+      fullName: string;
+      email: string;
+      password: string;
+    };
+
+    if (!email || !password || !fullName) {
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    }
+
+    const client = await connectToDatabase();
+    const db = client.db();
+    const existing = await db.collection(USERS_COLLECTION).findOne({ email });
+    if (existing) {
+      return NextResponse.json({ error: "Account already exists" }, { status: 409 });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const now = new Date().toISOString();
+
+    const user = {
+      fullName,
+      email,
+      passwordHash,
+      subscription: "free",
+      subscriptionStatus: "active",
+      aiCredits: 0,
+      documentsCreated: 0,
+      coverLettersGenerated: 0,
+      profileViews: 0,
+      isAdmin: false,
+      createdAt: now,
+      updatedAt: now,
+    } as any;
+
+    await db.collection(USERS_COLLECTION).insertOne(user);
+
+    return NextResponse.json({ ok: true }, { status: 201 });
+  } catch (err) {
+    console.error("Signup error:", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
 import { hashPassword, signToken } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { USERS_COLLECTION } from "@/models/user";

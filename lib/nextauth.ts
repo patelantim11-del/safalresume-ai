@@ -1,6 +1,8 @@
 import { connectToDatabase } from "@/lib/mongodb";
 import { USERS_COLLECTION } from "@/models/user";
+import bcrypt from "bcryptjs";
 import type { NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 
 export const authOptions: NextAuthOptions = {
@@ -8,6 +10,30 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+    }),
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) return null;
+        try {
+          const client = await connectToDatabase();
+          const db = client.db();
+          const u = await db
+            .collection(USERS_COLLECTION)
+            .findOne({ email: credentials.email });
+          if (!u || !u.passwordHash) return null;
+          const ok = await bcrypt.compare(credentials.password, u.passwordHash);
+          if (!ok) return null;
+          return { id: u._id.toString(), name: u.fullName, email: u.email };
+        } catch (err) {
+          console.error("Credentials authorize error:", err);
+          return null;
+        }
+      },
     }),
   ],
   secret: process.env.NEXTAUTH_SECRET,
