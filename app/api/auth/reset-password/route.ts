@@ -1,25 +1,43 @@
-import { NextResponse } from "next/server";
-import crypto from "crypto";
-import bcrypt from "bcryptjs";
+import { hashPassword } from "@/lib/auth";
+import { sendPasswordChangedEmail } from "@/lib/email";
 import { connectToDatabase } from "@/lib/mongodb";
+import { devGetToken, hashToken } from "@/lib/password-reset";
 import { USERS_COLLECTION } from "@/models/user";
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
+import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
     const { token, password } = await req.json();
-    if (!token || !password) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    if (!token || !password)
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
     const hashed = crypto.createHash("sha256").update(token).digest("hex");
 
     const client = await connectToDatabase();
     const db = client.db();
 
-    const user = await db.collection(USERS_COLLECTION).findOne({ resetToken: hashed, resetTokenExpiry: { $gt: Date.now() } });
-    if (!user) return NextResponse.json({ error: "Invalid or expired token" }, { status: 400 });
+    const user = await db
+      .collection(USERS_COLLECTION)
+      .findOne({ resetToken: hashed, resetTokenExpiry: { $gt: Date.now() } });
+    if (!user)
+      return NextResponse.json(
+        { error: "Invalid or expired token" },
+        { status: 400 },
+      );
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    await db.collection(USERS_COLLECTION).updateOne({ _id: user._id }, { $set: { passwordHash, updatedAt: new Date().toISOString() }, $unset: { resetToken: "", resetTokenExpiry: "" } });
+    await db
+      .collection(USERS_COLLECTION)
+      .updateOne(
+        { _id: user._id },
+        {
+          $set: { passwordHash, updatedAt: new Date().toISOString() },
+          $unset: { resetToken: "", resetTokenExpiry: "" },
+        },
+      );
 
     return NextResponse.json({ ok: true });
   } catch (err) {
@@ -27,12 +45,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
-import { hashPassword } from "@/lib/auth";
-import { sendPasswordChangedEmail } from "@/lib/email";
-import { connectToDatabase } from "@/lib/mongodb";
-import { devGetToken, hashToken } from "@/lib/password-reset";
-import { USERS_COLLECTION } from "@/models/user";
-import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {

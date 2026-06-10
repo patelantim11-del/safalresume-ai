@@ -1,7 +1,9 @@
-import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
+import { hashPassword, signToken } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { USERS_COLLECTION } from "@/models/user";
+import bcrypt from "bcryptjs";
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 
 export async function POST(req: Request) {
   try {
@@ -20,7 +22,10 @@ export async function POST(req: Request) {
     const db = client.db();
     const existing = await db.collection(USERS_COLLECTION).findOne({ email });
     if (existing) {
-      return NextResponse.json({ error: "Account already exists" }, { status: 409 });
+      return NextResponse.json(
+        { error: "Account already exists" },
+        { status: 409 },
+      );
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -49,11 +54,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
-import { hashPassword, signToken } from "@/lib/auth";
-import { connectToDatabase } from "@/lib/mongodb";
-import { USERS_COLLECTION } from "@/models/user";
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 
 export const runtime = "nodejs";
 
