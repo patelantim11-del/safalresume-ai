@@ -1,16 +1,12 @@
+import { verifyPassword } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { USERS_COLLECTION } from "@/models/user";
-import bcrypt from "bcryptjs";
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 
 export const authOptions: NextAuthOptions = {
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-    }),
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -22,18 +18,28 @@ export const authOptions: NextAuthOptions = {
         try {
           const client = await connectToDatabase();
           const db = client.db();
-          const u = await db
-            .collection(USERS_COLLECTION)
-            .findOne({ email: credentials.email });
-          if (!u || !u.passwordHash) return null;
-          const ok = await bcrypt.compare(credentials.password, u.passwordHash);
+          const users = db.collection(USERS_COLLECTION);
+          const user = await users.findOne({ email: credentials.email });
+          if (!user) return null;
+          const ok = await verifyPassword(
+            credentials.password,
+            user.passwordHash,
+          );
           if (!ok) return null;
-          return { id: u._id.toString(), name: u.fullName, email: u.email };
+          return {
+            id: user._id.toString(),
+            name: user.fullName || "",
+            email: user.email,
+          };
         } catch (err) {
           console.error("Credentials authorize error:", err);
           return null;
         }
       },
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
     }),
   ],
   secret: process.env.NEXTAUTH_SECRET,
@@ -41,6 +47,8 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       try {
         if (!user?.email) return false;
+        // Only upsert when an OAuth/account object is present (e.g. Google)
+        if (!account) return true;
         const client = await connectToDatabase();
         const db = client.db();
         const users = db.collection(USERS_COLLECTION);
@@ -52,8 +60,8 @@ export const authOptions: NextAuthOptions = {
             $set: {
               email: user.email,
               fullName: user.name || "",
-              image: user.image || null,
-              provider: account?.provider || "google",
+              image: (user as any).image || null,
+              provider: account.provider || "",
               updatedAt: now,
             },
             $setOnInsert: {

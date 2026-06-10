@@ -3,6 +3,7 @@
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -12,20 +13,24 @@ export default function LoginPage() {
     password: string;
   }>();
   const [status, setStatus] = useState<string | null>(null);
+  const router = useRouter();
 
   async function onSubmit(data: { email: string; password: string }) {
     setStatus(null);
-    const res = await signIn("credentials", {
-      redirect: false,
-      email: data.email,
-      password: data.password,
-    });
-
-    if (res?.error) {
-      setStatus(res.error as string);
-    } else {
-      // successful - redirect to dashboard
-      window.location.href = "/dashboard";
+    try {
+      const res = await signIn("credentials", {
+        redirect: false,
+        email: data.email,
+        password: data.password,
+      } as any);
+      // @ts-ignore
+      if (res?.error) {
+        setStatus(res.error || "Login failed");
+      } else {
+        router.push("/dashboard");
+      }
+    } catch (err) {
+      setStatus("Login failed");
     }
   }
 
@@ -37,33 +42,33 @@ export default function LoginPage() {
           Secure access to your saved resumes and AI-powered editor.
         </p>
 
-        <div className="mt-6 space-y-4">
+        <div className="mt-8 space-y-6">
           <GoogleAuthButton />
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <label className="block">
               <span className="text-sm text-slate-300">Email</span>
               <input
                 type="email"
                 {...register("email")}
-                className="mt-2 w-full rounded-lg border px-3 py-2 bg-white/5 text-slate-100 border-slate-700"
+                className="mt-2 w-full rounded-lg border px-3 py-2 bg-slate-800 text-slate-100 border-slate-700"
               />
             </label>
+
             <label className="block">
               <span className="text-sm text-slate-300">Password</span>
               <input
                 type="password"
                 {...register("password")}
-                className="mt-2 w-full rounded-lg border px-3 py-2 bg-white/5 text-slate-100 border-slate-700"
+                className="mt-2 w-full rounded-lg border px-3 py-2 bg-slate-800 text-slate-100 border-slate-700"
               />
             </label>
-            <button className="w-full rounded-lg bg-sky-500 px-4 py-2 text-white">
+
+            <button className="w-full rounded-2xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white">
               Sign in
             </button>
           </form>
         </div>
-
-        {status && <p className="mt-4 text-sm text-red-400">{status}</p>}
 
         <div className="mt-6 flex items-center justify-between text-sm text-slate-400">
           <p>
@@ -84,6 +89,8 @@ export default function LoginPage() {
             </Link>
           </p>
         </div>
+
+        {status && <p className="mt-4 text-sm text-red-400">{status}</p>}
       </div>
     </main>
   );

@@ -3,6 +3,7 @@
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -13,6 +14,7 @@ export default function SignupPage() {
     password: string;
   }>();
   const [status, setStatus] = useState<string | null>(null);
+  const router = useRouter();
 
   async function onSubmit(data: {
     fullName: string;
@@ -26,19 +28,19 @@ export default function SignupPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      const j = await res.json();
-      if (!res.ok) {
+      if (res.status === 201) {
+        // attempt to sign in via NextAuth credentials
+        const signInRes = await signIn("credentials", {
+          redirect: false,
+          email: data.email,
+          password: data.password,
+        } as any);
+        // navigate to dashboard regardless (NextAuth will set session cookie)
+        router.push("/dashboard");
+      } else {
+        const j = await res.json();
         setStatus(j.error || "Failed to create account");
-        return;
       }
-
-      // auto sign-in after successful signup
-      await signIn("credentials", {
-        redirect: true,
-        email: data.email,
-        password: data.password,
-        callbackUrl: "/dashboard",
-      });
     } catch (err) {
       setStatus("Failed to create account");
     }
@@ -54,48 +56,44 @@ export default function SignupPage() {
           Build resumes faster with AI-powered templates and export tools.
         </p>
 
-        <div className="mt-6 space-y-4">
+        <div className="mt-8 space-y-6">
+          <GoogleAuthButton
+            label="Continue with Google"
+            redirect="/dashboard"
+          />
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <label className="block">
               <span className="text-sm text-slate-300">Full name</span>
               <input
-                type="text"
                 {...register("fullName")}
-                className="mt-2 w-full rounded-lg border px-3 py-2 bg-white/5 text-slate-100 border-slate-700"
+                className="mt-2 w-full rounded-lg border px-3 py-2 bg-slate-800 text-slate-100 border-slate-700"
               />
             </label>
+
             <label className="block">
               <span className="text-sm text-slate-300">Email</span>
               <input
                 type="email"
                 {...register("email")}
-                className="mt-2 w-full rounded-lg border px-3 py-2 bg-white/5 text-slate-100 border-slate-700"
+                className="mt-2 w-full rounded-lg border px-3 py-2 bg-slate-800 text-slate-100 border-slate-700"
               />
             </label>
+
             <label className="block">
               <span className="text-sm text-slate-300">Password</span>
               <input
                 type="password"
                 {...register("password")}
-                className="mt-2 w-full rounded-lg border px-3 py-2 bg-white/5 text-slate-100 border-slate-700"
+                className="mt-2 w-full rounded-lg border px-3 py-2 bg-slate-800 text-slate-100 border-slate-700"
               />
             </label>
-            <button className="w-full rounded-lg bg-sky-500 px-4 py-2 text-white">
+
+            <button className="w-full rounded-2xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white">
               Create account
             </button>
           </form>
         </div>
-
-        <div className="mt-6">
-          <div className="mt-4 space-y-4">
-            <GoogleAuthButton
-              label="Continue with Google"
-              redirect="/dashboard"
-            />
-          </div>
-        </div>
-
-        {status && <p className="mt-4 text-sm text-slate-300">{status}</p>}
 
         <p className="mt-6 text-sm text-slate-400">
           Already have an account?{" "}
@@ -103,6 +101,8 @@ export default function SignupPage() {
             Sign in
           </Link>
         </p>
+
+        {status && <p className="mt-4 text-sm text-red-400">{status}</p>}
       </div>
     </main>
   );
