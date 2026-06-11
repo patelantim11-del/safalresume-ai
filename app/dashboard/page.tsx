@@ -23,7 +23,7 @@ export default function DashboardPage() {
         }
 
         const userData = await userResponse.json();
-        setUser(userData);
+        setUser(userData.user || null);
       } catch (error) {
         console.error("Failed to fetch user data:", error);
         router.push("/auth/login");

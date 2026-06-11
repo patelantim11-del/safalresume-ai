@@ -12,6 +12,9 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   secret: process.env.NEXTAUTH_SECRET,
+  // Ensure cookie secure flag matches environment to avoid cookies
+  // being marked Secure when running locally (http://localhost)
+  useSecureCookies: process.env.NODE_ENV === "production",
   callbacks: {
     async signIn({ user, account }) {
       try {
