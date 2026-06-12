@@ -1,8 +1,11 @@
+import { USERS_COLLECTION } from "@/models/user";
 import type { User } from "@/types";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { MongoClient, ObjectId } from "mongodb";
+import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
+import { connectToDatabase } from "./mongodb";
+import { authOptions } from "./nextauth";
 
 function getJwtSecret() {
   if (!process.env.JWT_SECRET) {
@@ -71,48 +74,27 @@ export function verifyToken(token: string) {
 }
 
 export async function getUserFromRequest(
-  request: NextRequest,
+  _request: NextRequest,
 ): Promise<User | null> {
   try {
-    const token = getTokenFromRequest(request);
-    if (!token) {
-      console.warn("[auth] Authorization failed: missing auth token");
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user || !session.user.email) {
+      console.warn("[auth] Authorization failed: no valid session");
       return null;
     }
 
-    const decoded = verifyToken(token);
-    if (!decoded) {
-      console.warn("[auth] Authorization failed: invalid JWT");
-      return null;
-    }
+    const email = session.user.email;
 
-    const uri = process.env.MONGODB_URI;
-    if (!uri) {
-      console.error("[auth] MONGODB_URI is not set");
-      return null;
-    }
-
-    const client = new MongoClient(uri);
-    await client.connect();
-
+    const client = await connectToDatabase();
     const db = client.db();
-    const usersCollection = db.collection("users");
+    const usersCollection = db.collection(USERS_COLLECTION);
 
-    console.log("[auth] Looking up authenticated user", {
-      userId: decoded.id,
-      email: decoded.email,
-    });
+    console.log("[auth] Looking up authenticated user by email", { email });
 
-    const user = await usersCollection.findOne({
-      _id: new ObjectId(decoded.id),
-    });
-    await client.close();
+    const user = await usersCollection.findOne({ email });
 
     if (!user) {
-      console.warn("[auth] Authorization failed: user not found", {
-        userId: decoded.id,
-        email: decoded.email,
-      });
+      console.warn("[auth] Authorization failed: user not found", { email });
       return null;
     }
 
@@ -134,7 +116,7 @@ export async function getUserFromRequest(
       isAdmin: user.isAdmin || false,
       createdAt: user.createdAt || new Date().toISOString(),
       updatedAt: user.updatedAt || new Date().toISOString(),
-    };
+    } as User;
   } catch (error) {
     console.error("Error getting user from request:", error);
     return null;
