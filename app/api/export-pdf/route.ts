@@ -1,8 +1,11 @@
 export const runtime = "nodejs";
 export const maxDuration = 60;
+export const dynamic = "force-dynamic";
 
 import { buildFullHtml, renderPrintableResumeHtml } from "@/lib/printTemplates";
+import chromium from "@sparticuz/chromium";
 import { NextResponse } from "next/server";
+import puppeteer from "puppeteer-core";
 
 export async function POST(request: Request) {
   try {
@@ -21,14 +24,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Dynamically import puppeteer-core and @sparticuz/chromium so the serverless
-    // bundle resolves correctly in Vercel environments.
-    const puppeteer = await import("puppeteer-core");
-    const chromiumModule = await import("@sparticuz/chromium");
-    const chromium =
-      (chromiumModule && (chromiumModule as any).default) || chromiumModule;
-
     try {
+      chromium.setGraphicsMode = false;
+
       const execPath = await chromium.executablePath();
       console.log("/api/export-pdf chromium.executablePath ->", execPath);
 
@@ -42,11 +40,19 @@ export async function POST(request: Request) {
         );
       }
 
-      const launchOpts: any = {
-        args: chromium.args,
-        defaultViewport: chromium.defaultViewport,
+      const headless = "shell" as const;
+      const launchOpts = {
+        args: await puppeteer.defaultArgs({
+          args: chromium.args,
+          headless,
+        }),
+        defaultViewport: {
+          width: 1280,
+          height: 1800,
+          deviceScaleFactor: 1,
+        },
         executablePath: execPath,
-        headless: "shell",
+        headless,
       };
 
       console.log("/api/export-pdf launching chromium with options:", {
@@ -57,15 +63,18 @@ export async function POST(request: Request) {
           : launchOpts.args,
       });
 
-      const browser = await (puppeteer as any).launch(launchOpts);
+      const browser = await puppeteer.launch(launchOpts);
       console.log("/api/export-pdf chromium launched");
 
-      let pdf: Buffer | null = null;
-      let page: any = null;
+      let pdf: Uint8Array | null = null;
+      let page: Awaited<ReturnType<typeof browser.newPage>> | null = null;
       try {
         page = await browser.newPage();
         await page.setContent(buildFullHtml(html), {
-          waitUntil: "networkidle0",
+          waitUntil: "domcontentloaded",
+        });
+        await page.waitForNetworkIdle({ idleTime: 500, timeout: 5_000 }).catch(() => {
+          console.warn("/api/export-pdf network idle wait timed out; continuing");
         });
         await page.emulateMediaType("screen");
 
@@ -102,7 +111,7 @@ export async function POST(request: Request) {
         );
       }
 
-      return new Response(pdf as unknown as BodyInit, {
+      return new Response(Buffer.from(pdf), {
         status: 200,
         headers: {
           "Content-Type": "application/pdf",

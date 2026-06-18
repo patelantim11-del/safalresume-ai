@@ -9,9 +9,12 @@
     "lint": "eslint",
     "test:export": "echo \"export test removed: html2canvas/html2pdf/jsPDF no longer used\""
   },
+  "engines": {
+    "node": ">=22.17.0 <25"
+  },
   "dependencies": {
     "@hookform/resolvers": "^3.1.1",
-    "@sparticuz/chromium": "^149.0.0",
+    "@sparticuz/chromium": "149.0.0",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",
     "dotenv": "^17.4.2",
@@ -19,10 +22,10 @@
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.468.0",
     "mongodb": "^6.11.0",
-    "next": "^15.5.6",
+    "next": "15.5.18",
     "next-auth": "^4.22.1",
     "nodemailer": "^7.0.0",
-    "puppeteer-core": "^24.15.0",
+    "puppeteer-core": "24.43.1",
     "razorpay": "^2.9.6",
     "react": "19.0.0",
     "react-dom": "19.0.0",
@@ -45,7 +48,7 @@
     "@typescript-eslint/eslint-plugin": "^8.59.4",
     "@typescript-eslint/parser": "^8.59.4",
     "eslint": "^9",
-    "eslint-config-next": "15.1.0",
+    "eslint-config-next": "15.5.18",
     "eslint-plugin-next": "^0.0.0",
     "tailwindcss": "^4",
     "typescript": "^5"
