@@ -79,6 +79,15 @@ const resumeSchema = z.object({
       value: z.string(),
     }),
   ),
+  interests: z
+    .array(
+      z.object({
+        id: z.string(),
+        value: z.string(),
+      }),
+    )
+    .optional()
+    .default([]),
   socialLinks: z.array(
     z.object({
       id: z.string(),
@@ -195,6 +204,7 @@ export async function POST(request: NextRequest) {
       certifications: parsed.data.certifications,
       achievements: parsed.data.achievements,
       languages: parsed.data.languages,
+      interests: parsed.data.interests,
       socialLinks: parsed.data.socialLinks,
       updatedAt: now,
     };

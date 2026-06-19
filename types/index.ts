@@ -36,6 +36,27 @@ export const resumeTemplates = [
   "fresher",
   "professional",
   "minimal",
+  "aurora",
+  "atlas",
+  "brio",
+  "canvas",
+  "clarity",
+  "crest",
+  "ember",
+  "folio",
+  "graphite",
+  "halo",
+  "ivory",
+  "keystone",
+  "lattice",
+  "meridian",
+  "nova",
+  "onyx",
+  "pinnacle",
+  "quartz",
+  "ripple",
+  "summit",
+  "verve",
 ] as const;
 
 export type ResumeTemplate = (typeof resumeTemplates)[number];
@@ -135,6 +156,7 @@ export interface JobResumeContent {
   certifications: ValueItem[];
   achievements: ValueItem[];
   languages: ValueItem[];
+  interests?: ValueItem[];
   socialLinks: SocialLink[];
 }
 
