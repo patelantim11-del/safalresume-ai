@@ -28,7 +28,6 @@ export async function POST(request: Request) {
       chromium.setGraphicsMode = false;
 
       const execPath = await chromium.executablePath();
-      console.log("/api/export-pdf chromium.executablePath ->", execPath);
 
       if (!execPath) {
         console.error(
@@ -55,16 +54,7 @@ export async function POST(request: Request) {
         headless,
       };
 
-      console.log("/api/export-pdf launching chromium with options:", {
-        executablePath: launchOpts.executablePath,
-        headless: launchOpts.headless,
-        args: Array.isArray(launchOpts.args)
-          ? launchOpts.args.slice(0, 8)
-          : launchOpts.args,
-      });
-
       const browser = await puppeteer.launch(launchOpts);
-      console.log("/api/export-pdf chromium launched");
 
       let pdf: Uint8Array | null = null;
       let page: Awaited<ReturnType<typeof browser.newPage>> | null = null;
@@ -73,23 +63,27 @@ export async function POST(request: Request) {
         await page.setContent(buildFullHtml(html), {
           waitUntil: "domcontentloaded",
         });
-        await page.waitForNetworkIdle({ idleTime: 500, timeout: 5_000 }).catch(() => {
-          console.warn("/api/export-pdf network idle wait timed out; continuing");
-        });
+        await page.evaluateHandle("document.fonts.ready").catch(() => null);
+        await page
+          .waitForNetworkIdle({ idleTime: 500, timeout: 5_000 })
+          .catch(() => {
+            console.warn(
+              "/api/export-pdf network idle wait timed out; continuing",
+            );
+          });
         await page.emulateMediaType("screen");
 
-        console.log("/api/export-pdf generating PDF (page.pdf)");
         pdf = await page.pdf({
           format: "A4",
           printBackground: true,
           margin: {
-            top: "10mm",
-            bottom: "10mm",
-            left: "10mm",
-            right: "10mm",
+            top: "0",
+            bottom: "0",
+            left: "0",
+            right: "0",
           },
+          preferCSSPageSize: true,
         });
-        console.log("/api/export-pdf page.pdf completed, bytes=", pdf?.length);
       } finally {
         try {
           if (page) await page.close();

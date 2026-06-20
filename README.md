@@ -45,7 +45,7 @@ A production-ready SaaS platform built with Next.js 15, TypeScript, MongoDB, and
 
 ## 📋 Prerequisites
 
-- Node.js 18+
+- Node.js 22.17+
 - MongoDB Atlas account
 - Gemini or OpenAI API key
 - Razorpay account (for payments)
@@ -75,12 +75,19 @@ OPENAI_API_KEY=your_openai_key
 AI_PROVIDER=gemini  # or 'openai'
 
 # Razorpay
-NEXT_PUBLIC_RAZORPAY_KEY=your_razorpay_key
-RAZORPAY_SECRET=your_razorpay_secret
+RAZORPAY_KEY_ID=your_razorpay_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+RAZORPAY_WEBHOOK_SECRET=your_razorpay_webhook_secret
 
-# JWT
+# Auth and app URLs
 JWT_SECRET=your_jwt_secret
+NEXTAUTH_SECRET=your_nextauth_secret
+NEXTAUTH_URL=http://localhost:3000
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
+
+Use `.env.example` as the complete deployment template.
 
 ### 3. Run Development Server
 
@@ -237,12 +244,24 @@ Content-Type: application/json
 ### Vercel (Recommended)
 
 ```bash
-vercel deploy
+npm run lint
+npm run build
+vercel deploy --prod
 ```
+
+This repository includes `vercel.json` with the Next.js preset, `npm ci` install command, `npm run build` build command, and a larger timeout/memory budget for `/api/export-pdf`.
 
 ### Environment Variables on Vercel
 
-Add all `.env.local` variables in Vercel dashboard Settings → Environment Variables
+Use `.env.example` as the source of truth for Vercel. Add those variables in Vercel Project Settings -> Environment Variables. For production, set:
+
+- `NEXTAUTH_URL`, `NEXT_PUBLIC_BASE_URL`, and `NEXT_PUBLIC_APP_URL` to your deployed HTTPS domain.
+- `JWT_SECRET` and `NEXTAUTH_SECRET` to different strong random values.
+- Either `GEMINI_API_KEY` with `AI_PROVIDER=gemini`, or `OPENAI_API_KEY` with `AI_PROVIDER=openai`.
+- `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and `RAZORPAY_WEBHOOK_SECRET` if payments are enabled.
+- `SMTP_USER` and `SMTP_PASS` for password reset emails.
+
+The project declares Node `>=22.17.0 <25` in `package.json`; set the Vercel Node.js version to 22.x if the dashboard asks.
 
 ### MongoDB Atlas
 

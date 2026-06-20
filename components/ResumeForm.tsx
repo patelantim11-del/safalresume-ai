@@ -36,6 +36,7 @@ import {
   Wand2,
   ZoomIn,
   ZoomOut,
+  type LucideIcon,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -928,14 +929,18 @@ export default function ResumeForm({
             </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
-            {[
+            {([
               ["summary", "AI Summary", Wand2],
               ["rewrite", "Rewrite Experience", Sparkles],
               ["skills", "Skill Suggestion", Star],
               ["ats", "ATS Score", CheckCircle2],
               ["review", "Resume Review", FileText],
               ["grammar", "Grammar Fix", PenLine],
-            ].map(([action, label, Icon]) => (
+            ] satisfies Array<[
+              "summary" | "rewrite" | "skills" | "ats" | "review" | "grammar",
+              string,
+              LucideIcon,
+            ]>).map(([action, label, Icon]) => (
               <button key={action as string} type="button" onClick={() => runAi(action as "summary" | "rewrite" | "skills" | "ats" | "review" | "grammar")} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/7 px-3 py-2 text-sm text-slate-200 hover:bg-white/12">
                 <Icon size={15} /> {aiBusy === action ? "Working..." : label}
               </button>
@@ -1019,13 +1024,13 @@ function ResumePreview({
   sectionOrder: SectionId[];
 }) {
   const p = values.personalInfo;
-  const contact = [
+  const contact: Array<[LucideIcon, string]> = [
     [Mail, p.email],
     [Phone, p.phone],
     [MapPin, p.location],
     [Globe2, p.website],
     [LinkIcon, p.linkedin],
-  ].filter(([, value]) => text(value));
+  ].filter((item): item is [LucideIcon, string] => Boolean(text(item[1])));
   const hasPhoto = template.photo && text(p.photoUrl);
 
   const renderSection = (id: SectionId) => {
@@ -1068,7 +1073,10 @@ function ResumePreview({
             ))}
           </div>
         </div>
-        {hasPhoto ? <img className="resume-photo" src={p.photoUrl} alt="" /> : null}
+        {hasPhoto ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img className="resume-photo" src={p.photoUrl} alt="" />
+        ) : null}
       </header>
       <main className="resume-content">{sectionOrder.map(renderSection)}</main>
     </article>
