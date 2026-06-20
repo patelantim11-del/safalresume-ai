@@ -41,6 +41,7 @@ import {
 import { useSearchParams } from "next/navigation";
 import {
   createElement,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -658,6 +659,14 @@ type ResumeFormProps = {
   multiStep?: boolean;
 };
 
+export default function ResumeForm(props: ResumeFormProps) {
+  return (
+    <Suspense fallback={<div className="text-slate-400">Loading editor...</div>}>
+      <ResumeFormContent {...props} />
+    </Suspense>
+  );
+}
+
 function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
@@ -713,7 +722,7 @@ function mergeResume(
   };
 }
 
-export default function ResumeForm({
+function ResumeFormContent({
   resumeId: propResumeId,
   initialData = null,
   onSave,
