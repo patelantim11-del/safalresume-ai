@@ -661,7 +661,9 @@ type ResumeFormProps = {
 
 export default function ResumeForm(props: ResumeFormProps) {
   return (
-    <Suspense fallback={<div className="text-slate-400">Loading editor...</div>}>
+    <Suspense
+      fallback={<div className="text-slate-400">Loading editor...</div>}
+    >
       <ResumeFormContent {...props} />
     </Suspense>
   );
