@@ -121,7 +121,7 @@ const sectionLabels: Record<SectionId, string> = {
   interests: "Interests",
 };
 
-const sectionIcons: Record<SectionId, typeof FileText> = {
+const sectionIcons: Record<SectionId, LucideIcon> = {
   personal: FileText,
   summary: PenLine,
   experience: BriefcaseBusiness,
